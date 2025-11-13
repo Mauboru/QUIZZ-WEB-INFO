@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { QRCodeSVG } from 'qrcode.react'
+import { getTeacherState, saveTeacherState, clearTeacherState } from '../utils/storage'
+import { getSocketUrl } from '../utils/socketConfig'
 import './TeacherRoom.css'
 
 function TeacherRoom() {
