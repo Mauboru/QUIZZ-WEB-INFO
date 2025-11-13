@@ -129,25 +129,47 @@ async function saveRooms() {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     // Verificar se o arquivo foi criado
+    await new Promise(resolve => setTimeout(resolve, 200)); // Aguardar mais tempo
+    
     if (existsSync(roomsFile)) {
       const stats = await stat(roomsFile);
       console.log(`✅ Salas salvas com sucesso em: ${roomsFile}`);
       console.log(`   Tamanho do arquivo: ${stats.size} bytes`);
       console.log(`   Permissões: ${stats.mode.toString(8)}`);
       console.log(`   ${Object.keys(roomsData).length} sala(s) salva(s)`);
+      
+      // Verificar conteúdo do arquivo
+      try {
+        const fileContent = await readFile(roomsFile, 'utf-8');
+        const parsed = JSON.parse(fileContent);
+        console.log(`   ✅ Arquivo válido com ${Object.keys(parsed).length} sala(s)`);
+      } catch (verifyError) {
+        console.error(`   ⚠️ Arquivo criado mas inválido: ${verifyError.message}`);
+      }
     } else {
       console.error('❌ ERRO: Arquivo não foi criado após writeFile!');
+      console.error(`   Caminho completo: ${roomsFile}`);
+      console.error(`   Diretório existe: ${existsSync(dataDir)}`);
       console.error(`   Tentando criar arquivo vazio para testar permissões...`);
       try {
         await writeFile(roomsFile + '.test', 'test', { mode: 0o664 });
+        await new Promise(resolve => setTimeout(resolve, 100));
         if (existsSync(roomsFile + '.test')) {
           console.error(`   ✅ Arquivo de teste criado com sucesso! Permissões OK.`);
           // Deletar arquivo de teste
           const { unlink } = await import('fs/promises');
           await unlink(roomsFile + '.test');
+          // Tentar criar o arquivo real novamente
+          console.error(`   Tentando criar arquivo real novamente...`);
+          await writeFile(roomsFile, jsonData, { mode: 0o664, flag: 'w' });
+          await new Promise(resolve => setTimeout(resolve, 200));
+          if (existsSync(roomsFile)) {
+            console.error(`   ✅ Arquivo criado na segunda tentativa!`);
+          }
         }
       } catch (testError) {
         console.error(`   ❌ Erro ao criar arquivo de teste: ${testError.message}`);
+        console.error(`   Código: ${testError.code}`);
         console.error(`   Possível problema de permissões no diretório: ${dataDir}`);
       }
     }
@@ -437,16 +459,25 @@ io.on('connection', (socket) => {
 
   // Salvar perguntas antes de iniciar quiz
   socket.on('save-questions', ({ roomId, questions }) => {
-    console.log(`📝 Recebido save-questions para sala ${roomId}: ${questions?.length || 0} pergunta(s)`);
+    console.log(`📝 ===== RECEBIDO save-questions =====`);
+    console.log(`📝 Sala: ${roomId}`);
+    console.log(`📝 Perguntas: ${questions?.length || 0}`);
+    console.log(`📝 Socket ID: ${socket.id}`);
+    
     const room = rooms.get(roomId);
     
     if (!room) {
       console.error(`❌ Sala ${roomId} não encontrada ao tentar salvar perguntas`);
+      console.error(`   Salas disponíveis:`, Array.from(rooms.keys()));
       return;
     }
     
+    console.log(`📝 Sala encontrada. Teacher ID: ${room.teacherId}, Socket ID: ${socket.id}`);
+    
     if (room.teacherId !== socket.id) {
-      console.error(`❌ Tentativa de salvar perguntas por não-professor. Socket: ${socket.id}, Teacher: ${room.teacherId}`);
+      console.error(`❌ Tentativa de salvar perguntas por não-professor.`);
+      console.error(`   Teacher ID: ${room.teacherId}`);
+      console.error(`   Socket ID: ${socket.id}`);
       return;
     }
 

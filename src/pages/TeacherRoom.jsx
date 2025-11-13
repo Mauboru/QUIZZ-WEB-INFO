@@ -50,6 +50,19 @@ function TeacherRoom() {
     
     newSocket.emit('create-room', { roomId, teacherName, reconnect: true })
     
+    // Logs de conexão
+    newSocket.on('connect', () => {
+      console.log('✅ Socket conectado:', newSocket.id)
+    })
+    
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket desconectado')
+    })
+    
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Erro de conexão:', error)
+    })
+    
     newSocket.on('room-reconnected', ({ students, questions: serverQuestions, status: serverStatus, currentQuestion: serverQuestion, questionNumber: serverQNum }) => {
       setStudents(students || [])
       // SEMPRE usar dados do servidor - se tiver perguntas no servidor, usar elas
@@ -145,10 +158,14 @@ function TeacherRoom() {
     
     // Enviar perguntas ao servidor
     if (socket) {
-      console.log('Enviando perguntas ao servidor:', updatedQuestions.length)
+      console.log('📤 Enviando perguntas ao servidor:', updatedQuestions.length, 'pergunta(s)')
+      console.log('📤 Socket ID:', socket.id)
+      console.log('📤 Room ID:', roomId)
       socket.emit('save-questions', { roomId, questions: updatedQuestions })
+      console.log('✅ Evento save-questions emitido')
     } else {
-      console.warn('Socket não disponível ao adicionar pergunta')
+      console.error('❌ Socket não disponível ao adicionar pergunta!')
+      console.error('   Socket state:', socket)
     }
     
     setNewQuestion({
@@ -198,10 +215,14 @@ function TeacherRoom() {
         
         // Enviar perguntas ao servidor
         if (socket) {
-          console.log('Enviando perguntas importadas ao servidor:', updatedQuestions.length)
+          console.log('📤 Enviando perguntas importadas ao servidor:', updatedQuestions.length, 'pergunta(s)')
+          console.log('📤 Socket ID:', socket.id)
+          console.log('📤 Room ID:', roomId)
           socket.emit('save-questions', { roomId, questions: updatedQuestions })
+          console.log('✅ Evento save-questions emitido (import)')
         } else {
-          console.warn('Socket não disponível ao importar perguntas')
+          console.error('❌ Socket não disponível ao importar perguntas!')
+          console.error('   Socket state:', socket)
         }
         
         alert(`${importedQuestions.length} pergunta(s) importada(s) com sucesso!`)
