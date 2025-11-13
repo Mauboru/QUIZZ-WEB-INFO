@@ -148,23 +148,25 @@ io.on('connection', (socket) => {
   socket.on('create-room', ({ roomId, teacherName, reconnect = false }) => {
     const existingRoom = rooms.get(roomId);
     
-    if (existingRoom && reconnect) {
-      // Reconexão: atualizar teacherId mas manter estado da sala
+    if (existingRoom) {
+      // Sala existe: reconexão - atualizar teacherId mas manter estado da sala
       existingRoom.teacherId = socket.id;
+      existingRoom.teacherName = teacherName; // Atualizar nome também
+      users.set(socket.id, { roomId, isTeacher: true });
       socket.join(roomId);
       
       // Enviar estado atual da sala
       socket.emit('room-reconnected', {
         roomId,
-        students: existingRoom.students,
-        questions: existingRoom.questions,
+        students: existingRoom.students || [],
+        questions: existingRoom.questions || [],
         status: existingRoom.status,
         currentQuestion: existingRoom.currentQuestion,
         questionIndex: existingRoom.questionIndex,
         questionNumber: existingRoom.questionIndex + 1
       });
       
-      console.log(`Professor reconectado: ${roomId} por ${teacherName}`);
+      console.log(`Professor reconectado: ${roomId} por ${teacherName}, ${existingRoom.students.length} aluno(s) na sala`);
     } else {
       // Nova sala
       rooms.set(roomId, {
@@ -181,6 +183,7 @@ io.on('connection', (socket) => {
         startTime: null
       });
       
+      users.set(socket.id, { roomId, isTeacher: true });
       socket.join(roomId);
       socket.emit('room-created', { roomId });
       console.log(`Sala criada: ${roomId} por ${teacherName}`);
@@ -281,6 +284,20 @@ io.on('connection', (socket) => {
     saveRooms(); // Salvar após aluno entrar
   });
 
+  // Salvar perguntas antes de iniciar quiz
+  socket.on('save-questions', ({ roomId, questions }) => {
+    const room = rooms.get(roomId);
+    
+    if (!room || room.teacherId !== socket.id) {
+      return;
+    }
+
+    // Salvar perguntas mesmo antes de iniciar o quiz
+    room.questions = questions;
+    saveRooms(); // Salvar perguntas no servidor
+    console.log(`${questions.length} pergunta(s) salva(s) na sala ${roomId}`);
+  });
+
   // Professor inicia o quiz
   socket.on('start-quiz', ({ roomId, questions }) => {
     const room = rooms.get(roomId);
@@ -289,7 +306,11 @@ io.on('connection', (socket) => {
       return;
     }
 
-    room.questions = questions;
+    // Usar perguntas salvas ou as enviadas
+    if (questions && questions.length > 0) {
+      room.questions = questions;
+    }
+
     room.status = 'countdown';
     room.questionIndex = 0;
     room.answers.clear();

@@ -38,33 +38,41 @@ function TeacherRoom() {
     const newSocket = io(getSocketUrl())
     setSocket(newSocket)
 
-    // Se for reconexão, restaurar estado e solicitar estado atual do servidor
-    if (isReconnect) {
+    // Sempre tentar reconectar primeiro (verificar se sala existe no servidor)
+    // Usar estado salvo apenas como fallback temporário
+    if (savedState) {
       setQuestions(savedState.questions || [])
       setStatus(savedState.status || 'waiting')
       setCurrentQuestion(savedState.currentQuestion)
       setQuestionNumber(savedState.questionNumber || 0)
-      
-      newSocket.emit('create-room', { roomId, teacherName, reconnect: true })
-      
-      newSocket.on('room-reconnected', ({ students, questions: serverQuestions, status: serverStatus, currentQuestion: serverQuestion, questionNumber: serverQNum }) => {
-        setStudents(students || [])
-        if (serverQuestions && serverQuestions.length > 0) {
-          setQuestions(serverQuestions)
-        }
-        if (serverStatus) {
-          setStatus(serverStatus)
-        }
-        if (serverQuestion) {
-          setCurrentQuestion(serverQuestion)
-        }
-        if (serverQNum) {
-          setQuestionNumber(serverQNum)
-        }
-      })
-    } else {
-      newSocket.emit('create-room', { roomId, teacherName, reconnect: false })
     }
+    
+    newSocket.emit('create-room', { roomId, teacherName, reconnect: true })
+    
+    newSocket.on('room-reconnected', ({ students, questions: serverQuestions, status: serverStatus, currentQuestion: serverQuestion, questionNumber: serverQNum }) => {
+      setStudents(students || [])
+      // Sempre usar dados do servidor se disponíveis
+      if (serverQuestions !== undefined) {
+        setQuestions(serverQuestions || [])
+      }
+      if (serverStatus !== undefined) {
+        setStatus(serverStatus)
+      }
+      if (serverQuestion !== undefined) {
+        setCurrentQuestion(serverQuestion)
+      }
+      if (serverQNum !== undefined) {
+        setQuestionNumber(serverQNum)
+      }
+    })
+    
+    // Se não houver sala no servidor, criar nova
+    newSocket.on('room-created', ({ roomId: createdRoomId }) => {
+      if (createdRoomId === roomId) {
+        // Sala foi criada, limpar perguntas se não vieram do servidor
+        console.log('Nova sala criada')
+      }
+    })
 
     newSocket.on('student-joined', ({ students }) => {
       setStudents(students)
@@ -114,7 +122,14 @@ function TeacherRoom() {
       return
     }
 
-    setQuestions([...questions, { ...newQuestion }])
+    const updatedQuestions = [...questions, { ...newQuestion }]
+    setQuestions(updatedQuestions)
+    
+    // Enviar perguntas ao servidor
+    if (socket) {
+      socket.emit('save-questions', { roomId, questions: updatedQuestions })
+    }
+    
     setNewQuestion({
       text: '',
       options: ['', '', '', ''],
@@ -157,7 +172,14 @@ function TeacherRoom() {
           }
         })
 
-        setQuestions([...questions, ...importedQuestions])
+        const updatedQuestions = [...questions, ...importedQuestions]
+        setQuestions(updatedQuestions)
+        
+        // Enviar perguntas ao servidor
+        if (socket) {
+          socket.emit('save-questions', { roomId, questions: updatedQuestions })
+        }
+        
         alert(`${importedQuestions.length} pergunta(s) importada(s) com sucesso!`)
         
         // Limpar o input
