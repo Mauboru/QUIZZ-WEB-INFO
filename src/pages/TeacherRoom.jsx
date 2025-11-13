@@ -36,7 +36,12 @@ function TeacherRoom() {
     const isReconnect = savedState && savedState.roomId === roomId
 
     const newSocket = io(getSocketUrl())
+    
+    // Definir socket imediatamente
     setSocket(newSocket)
+    
+    // Também salvar globalmente para acesso imediato
+    window.currentTeacherSocket = newSocket
 
     // Sempre tentar reconectar primeiro (verificar se sala existe no servidor)
     // Usar estado salvo apenas como fallback temporário
@@ -132,6 +137,7 @@ function TeacherRoom() {
     return () => {
       clearInterval(saveInterval)
       newSocket.close()
+      window.currentTeacherSocket = null
     }
   }, [roomId, teacherName])
 
@@ -156,16 +162,24 @@ function TeacherRoom() {
     const updatedQuestions = [...questions, { ...newQuestion }]
     setQuestions(updatedQuestions)
     
-    // Enviar perguntas ao servidor
-    if (socket) {
+    // Enviar perguntas ao servidor - usar socket do estado ou buscar diretamente
+    const socketToUse = socket || (window.currentTeacherSocket)
+    if (socketToUse && socketToUse.connected) {
       console.log('📤 Enviando perguntas ao servidor:', updatedQuestions.length, 'pergunta(s)')
-      console.log('📤 Socket ID:', socket.id)
+      console.log('📤 Socket ID:', socketToUse.id)
       console.log('📤 Room ID:', roomId)
-      socket.emit('save-questions', { roomId, questions: updatedQuestions })
+      socketToUse.emit('save-questions', { roomId, questions: updatedQuestions })
       console.log('✅ Evento save-questions emitido')
     } else {
       console.error('❌ Socket não disponível ao adicionar pergunta!')
       console.error('   Socket state:', socket)
+      console.error('   Socket connected:', socketToUse?.connected)
+      console.error('   Tentando reconectar...')
+      // Tentar usar o socket do window se disponível
+      if (window.currentTeacherSocket) {
+        window.currentTeacherSocket.emit('save-questions', { roomId, questions: updatedQuestions })
+        console.log('✅ Evento enviado via window.currentTeacherSocket')
+      }
     }
     
     setNewQuestion({
@@ -213,16 +227,23 @@ function TeacherRoom() {
         const updatedQuestions = [...questions, ...importedQuestions]
         setQuestions(updatedQuestions)
         
-        // Enviar perguntas ao servidor
-        if (socket) {
+        // Enviar perguntas ao servidor - usar socket do estado ou buscar diretamente
+        const socketToUse = socket || (window.currentTeacherSocket)
+        if (socketToUse && socketToUse.connected) {
           console.log('📤 Enviando perguntas importadas ao servidor:', updatedQuestions.length, 'pergunta(s)')
-          console.log('📤 Socket ID:', socket.id)
+          console.log('📤 Socket ID:', socketToUse.id)
           console.log('📤 Room ID:', roomId)
-          socket.emit('save-questions', { roomId, questions: updatedQuestions })
+          socketToUse.emit('save-questions', { roomId, questions: updatedQuestions })
           console.log('✅ Evento save-questions emitido (import)')
         } else {
           console.error('❌ Socket não disponível ao importar perguntas!')
           console.error('   Socket state:', socket)
+          console.error('   Socket connected:', socketToUse?.connected)
+          // Tentar usar o socket do window se disponível
+          if (window.currentTeacherSocket) {
+            window.currentTeacherSocket.emit('save-questions', { roomId, questions: updatedQuestions })
+            console.log('✅ Evento enviado via window.currentTeacherSocket (import)')
+          }
         }
         
         alert(`${importedQuestions.length} pergunta(s) importada(s) com sucesso!`)

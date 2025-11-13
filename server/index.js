@@ -302,7 +302,16 @@ async function loadRooms() {
 loadRooms();
 
 io.on('connection', (socket) => {
-  console.log('Usuário conectado:', socket.id);
+  console.log('✅ Usuário conectado:', socket.id);
+  
+  // Tratar erros de socket
+  socket.on('error', (error) => {
+    console.error('❌ Erro no socket:', socket.id, error);
+  });
+  
+  socket.on('disconnect', (reason) => {
+    console.log('👋 Usuário desconectado:', socket.id, 'Razão:', reason);
+  });
 
   // Criar sala (professor)
   socket.on('create-room', ({ roomId, teacherName, reconnect = false }) => {
