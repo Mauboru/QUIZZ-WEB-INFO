@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, stat } from 'fs/promises';
 import { existsSync } from 'fs';
 
 const app = express();
@@ -97,6 +97,8 @@ function deserializeRoom(data) {
 // Salvar salas em arquivo
 async function saveRooms() {
   try {
+    console.log('saveRooms() chamado - Total de salas:', rooms.size);
+    
     // Criar diretório se não existir
     if (!existsSync(dataDir)) {
       await mkdir(dataDir, { recursive: true });
@@ -106,14 +108,26 @@ async function saveRooms() {
     const roomsData = {};
     for (const [roomId, room] of rooms.entries()) {
       roomsData[roomId] = serializeRoom(room);
+      console.log(`  - Sala ${roomId}: ${room.questions?.length || 0} pergunta(s), ${room.students?.length || 0} aluno(s)`);
     }
 
-    await writeFile(roomsFile, JSON.stringify(roomsData, null, 2), 'utf-8');
-    console.log(`Salas salvas com sucesso em: ${roomsFile} (${Object.keys(roomsData).length} sala(s))`);
+    const jsonData = JSON.stringify(roomsData, null, 2);
+    await writeFile(roomsFile, jsonData, 'utf-8');
+    
+    // Verificar se o arquivo foi criado
+    if (existsSync(roomsFile)) {
+      const stats = await stat(roomsFile);
+      console.log(`✅ Salas salvas com sucesso em: ${roomsFile}`);
+      console.log(`   Tamanho do arquivo: ${stats.size} bytes`);
+      console.log(`   ${Object.keys(roomsData).length} sala(s) salva(s)`);
+    } else {
+      console.error('❌ ERRO: Arquivo não foi criado após writeFile!');
+    }
   } catch (error) {
-    console.error('Erro ao salvar salas:', error);
-    console.error('Caminho tentado:', roomsFile);
-    console.error('Diretório:', dataDir);
+    console.error('❌ Erro ao salvar salas:', error);
+    console.error('   Caminho tentado:', roomsFile);
+    console.error('   Diretório:', dataDir);
+    console.error('   Stack:', error.stack);
   }
 }
 
@@ -198,7 +212,8 @@ io.on('connection', (socket) => {
         questionNumber: existingRoom.questionIndex + 1
       });
       
-      console.log(`Professor reconectado: ${roomId} por ${teacherName}, ${existingRoom.students.length} aluno(s) na sala`);
+      console.log(`👨‍🏫 Professor reconectado: ${roomId} por ${teacherName}, ${existingRoom.students.length} aluno(s) na sala`);
+      console.log(`   Perguntas na sala: ${existingRoom.questions?.length || 0}`);
     } else {
       // Nova sala
       rooms.set(roomId, {
@@ -329,23 +344,24 @@ io.on('connection', (socket) => {
 
   // Salvar perguntas antes de iniciar quiz
   socket.on('save-questions', ({ roomId, questions }) => {
-    console.log(`Recebido save-questions para sala ${roomId}: ${questions?.length || 0} pergunta(s)`);
+    console.log(`📝 Recebido save-questions para sala ${roomId}: ${questions?.length || 0} pergunta(s)`);
     const room = rooms.get(roomId);
     
     if (!room) {
-      console.error(`Sala ${roomId} não encontrada ao tentar salvar perguntas`);
+      console.error(`❌ Sala ${roomId} não encontrada ao tentar salvar perguntas`);
       return;
     }
     
     if (room.teacherId !== socket.id) {
-      console.error(`Tentativa de salvar perguntas por não-professor. Socket: ${socket.id}, Teacher: ${room.teacherId}`);
+      console.error(`❌ Tentativa de salvar perguntas por não-professor. Socket: ${socket.id}, Teacher: ${room.teacherId}`);
       return;
     }
 
     // Salvar perguntas mesmo antes de iniciar o quiz
     room.questions = questions || [];
+    console.log(`💾 Salvando ${questions.length} pergunta(s) na sala ${roomId}...`);
     saveRooms(); // Salvar perguntas no servidor
-    console.log(`${questions.length} pergunta(s) salva(s) na sala ${roomId}`);
+    console.log(`✅ ${questions.length} pergunta(s) salva(s) na sala ${roomId}`);
   });
 
   // Professor inicia o quiz
