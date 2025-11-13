@@ -315,9 +315,18 @@ io.on('connection', (socket) => {
 
   // Criar sala (professor)
   socket.on('create-room', ({ roomId, teacherName, reconnect = false }) => {
-    const existingRoom = rooms.get(roomId);
-    
-    if (existingRoom) {
+    try {
+      console.log(`📥 Recebido create-room: sala=${roomId}, professor=${teacherName}, reconnect=${reconnect}`);
+      
+      if (!roomId || !teacherName) {
+        console.error('❌ Dados inválidos: roomId ou teacherName faltando');
+        socket.emit('error', { message: 'Dados inválidos' });
+        return;
+      }
+      
+      const existingRoom = rooms.get(roomId);
+      
+      if (existingRoom) {
       // Sala existe: reconexão - atualizar teacherId mas manter estado da sala
       existingRoom.teacherId = socket.id;
       existingRoom.teacherName = teacherName; // Atualizar nome também
@@ -357,8 +366,17 @@ io.on('connection', (socket) => {
       users.set(socket.id, { roomId, isTeacher: true });
       socket.join(roomId);
       socket.emit('room-created', { roomId });
-      console.log(`Sala criada: ${roomId} por ${teacherName}`);
+      console.log(`🏫 Sala criada: ${roomId} por ${teacherName}`);
       saveRooms(); // Salvar após criar sala
+    }
+    } catch (error) {
+      console.error('❌ Erro ao processar create-room:', error);
+      console.error('   Stack:', error.stack);
+      try {
+        socket.emit('error', { message: 'Erro ao criar sala: ' + error.message });
+      } catch (emitError) {
+        console.error('   Erro ao emitir erro:', emitError);
+      }
     }
   });
 
