@@ -1,0 +1,21 @@
+{
+  "R2PJF4": {
+    "id": "R2PJF4",
+    "teacherId": "Ayh6yLqejXK9H05-AAAu",
+    "teacherName": "aasddasd",
+    "students": [
+      {
+        "id": "O1_NRW_Z_RRaNdaZAAA2",
+        "name": "sda",
+        "score": 0,
+        "answers": []
+      }
+    ],
+    "status": "waiting",
+    "currentQuestion": null,
+    "questionIndex": 0,
+    "questions": [],
+    "answers": [],
+    "startTime": null
+  }
+}

@@ -214,6 +214,7 @@ io.on('connection', (socket) => {
       
       console.log(`👨‍🏫 Professor reconectado: ${roomId} por ${teacherName}, ${existingRoom.students.length} aluno(s) na sala`);
       console.log(`   Perguntas na sala: ${existingRoom.questions?.length || 0}`);
+      saveRooms(); // Salvar após reconexão
     } else {
       // Nova sala
       rooms.set(roomId, {
@@ -521,10 +522,12 @@ io.on('connection', (socket) => {
       
       if (room) {
         if (user.isTeacher) {
-          // Professor saiu, encerrar sala
-          io.to(user.roomId).emit('room-closed');
-          rooms.delete(user.roomId);
-          saveRooms(); // Salvar após deletar sala
+          // Professor desconectou - NÃO deletar a sala, apenas limpar teacherId
+          // A sala será mantida para reconexão
+          console.log(`Professor desconectou da sala ${user.roomId}, mas sala será mantida`);
+          room.teacherId = null; // Limpar teacherId mas manter sala
+          // Não emitir room-closed, permitir reconexão
+          saveRooms(); // Salvar estado atualizado
         } else {
           // Aluno saiu
           room.students = room.students.filter(s => s.id !== socket.id);
