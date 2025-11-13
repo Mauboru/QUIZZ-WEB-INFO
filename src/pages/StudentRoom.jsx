@@ -61,7 +61,8 @@ function StudentRoom() {
       newSocket.emit('join-room', { roomId, studentName, reconnect: false })
     }
 
-    newSocket.on('joined-room', ({ reconnected }) => {
+    newSocket.on('joined-room', ({ reconnected, roomId: joinedRoomId, studentName: joinedName }) => {
+      console.log('Evento joined-room recebido:', { reconnected, roomId: joinedRoomId, studentName: joinedName })
       if (!reconnected) {
         setStatus('waiting')
       }

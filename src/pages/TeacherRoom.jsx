@@ -91,11 +91,13 @@ function TeacherRoom() {
     })
 
     newSocket.on('student-joined', ({ students }) => {
-      setStudents(students)
+      console.log('Evento student-joined recebido:', students)
+      setStudents(students || [])
     })
 
     newSocket.on('students-updated', ({ students }) => {
-      setStudents(students)
+      console.log('Evento students-updated recebido:', students)
+      setStudents(students || [])
     })
 
     newSocket.on('answer-received', () => {
@@ -143,7 +145,10 @@ function TeacherRoom() {
     
     // Enviar perguntas ao servidor
     if (socket) {
+      console.log('Enviando perguntas ao servidor:', updatedQuestions.length)
       socket.emit('save-questions', { roomId, questions: updatedQuestions })
+    } else {
+      console.warn('Socket não disponível ao adicionar pergunta')
     }
     
     setNewQuestion({
@@ -193,7 +198,10 @@ function TeacherRoom() {
         
         // Enviar perguntas ao servidor
         if (socket) {
+          console.log('Enviando perguntas importadas ao servidor:', updatedQuestions.length)
           socket.emit('save-questions', { roomId, questions: updatedQuestions })
+        } else {
+          console.warn('Socket não disponível ao importar perguntas')
         }
         
         alert(`${importedQuestions.length} pergunta(s) importada(s) com sucesso!`)

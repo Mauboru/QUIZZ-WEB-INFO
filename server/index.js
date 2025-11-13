@@ -100,6 +100,7 @@ async function saveRooms() {
     // Criar diretório se não existir
     if (!existsSync(dataDir)) {
       await mkdir(dataDir, { recursive: true });
+      console.log(`Diretório criado: ${dataDir}`);
     }
 
     const roomsData = {};
@@ -108,17 +109,29 @@ async function saveRooms() {
     }
 
     await writeFile(roomsFile, JSON.stringify(roomsData, null, 2), 'utf-8');
-    console.log('Salas salvas com sucesso');
+    console.log(`Salas salvas com sucesso em: ${roomsFile} (${Object.keys(roomsData).length} sala(s))`);
   } catch (error) {
     console.error('Erro ao salvar salas:', error);
+    console.error('Caminho tentado:', roomsFile);
+    console.error('Diretório:', dataDir);
   }
 }
 
 // Carregar salas do arquivo
 async function loadRooms() {
   try {
+    console.log(`Tentando carregar salas de: ${roomsFile}`);
+    console.log(`Diretório: ${dataDir}`);
+    console.log(`Diretório existe: ${existsSync(dataDir)}`);
+    
     if (!existsSync(roomsFile)) {
-      console.log('Arquivo de salas não encontrado, iniciando com salas vazias');
+      console.log(`Arquivo de salas não encontrado em: ${roomsFile}`);
+      console.log('Iniciando com salas vazias');
+      // Criar diretório se não existir
+      if (!existsSync(dataDir)) {
+        await mkdir(dataDir, { recursive: true });
+        console.log(`Diretório criado: ${dataDir}`);
+      }
       return;
     }
 
@@ -291,32 +304,46 @@ io.on('connection', (socket) => {
     users.set(socket.id, { roomId, isTeacher: false });
     
     socket.join(roomId);
-    socket.emit('joined-room', { roomId, studentName });
+    
+    // Emitir joined-room primeiro
+    socket.emit('joined-room', { roomId, studentName, reconnected: false });
     
     // Notificar professor sobre novo aluno
-    io.to(room.teacherId).emit('student-joined', {
-      students: room.students
-    });
+    if (room.teacherId) {
+      io.to(room.teacherId).emit('student-joined', {
+        students: room.students
+      });
+      console.log(`Notificando professor ${room.teacherId} sobre novo aluno`);
+    } else {
+      console.warn(`Sala ${roomId} não tem teacherId definido`);
+    }
     
-    // Atualizar lista de alunos para todos
+    // Atualizar lista de alunos para todos na sala
     io.to(roomId).emit('students-updated', {
       students: room.students
     });
     
-    console.log(`${studentName} entrou na sala ${roomId}`);
+    console.log(`${studentName} entrou na sala ${roomId}. Total de alunos: ${room.students.length}`);
     saveRooms(); // Salvar após aluno entrar
   });
 
   // Salvar perguntas antes de iniciar quiz
   socket.on('save-questions', ({ roomId, questions }) => {
+    console.log(`Recebido save-questions para sala ${roomId}: ${questions?.length || 0} pergunta(s)`);
     const room = rooms.get(roomId);
     
-    if (!room || room.teacherId !== socket.id) {
+    if (!room) {
+      console.error(`Sala ${roomId} não encontrada ao tentar salvar perguntas`);
+      return;
+    }
+    
+    if (room.teacherId !== socket.id) {
+      console.error(`Tentativa de salvar perguntas por não-professor. Socket: ${socket.id}, Teacher: ${room.teacherId}`);
       return;
     }
 
     // Salvar perguntas mesmo antes de iniciar o quiz
-    room.questions = questions;
+    room.questions = questions || [];
     saveRooms(); // Salvar perguntas no servidor
     console.log(`${questions.length} pergunta(s) salva(s) na sala ${roomId}`);
   });
