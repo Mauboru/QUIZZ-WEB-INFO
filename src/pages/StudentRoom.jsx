@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
+import { getStudentState, saveStudentState, clearStudentState } from '../utils/storage'
+import { getSocketUrl } from '../utils/socketConfig'
 import './StudentRoom.css'
 
 function StudentRoom() {
