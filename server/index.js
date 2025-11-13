@@ -643,10 +643,31 @@ io.on('connection', (socket) => {
     }
 
     // Notificar professor sobre resposta recebida
+    const studentName = room.students.find(s => s.id === socket.id)?.name || 'Desconhecido';
     io.to(room.teacherId).emit('answer-received', {
       studentId: socket.id,
-      studentName: room.students.find(s => s.id === socket.id)?.name || 'Desconhecido'
+      studentName: studentName
     });
+
+    // Verificar se todos os alunos já responderam
+    const totalStudents = room.students.length;
+    let answeredCount = 0;
+    
+    room.students.forEach(student => {
+      const studentAnswers = room.answers.get(student.id) || [];
+      const hasAnswered = studentAnswers.some(a => a.questionIndex === room.questionIndex);
+      if (hasAnswered) {
+        answeredCount++;
+      }
+    });
+
+    console.log(`📊 Respostas: ${answeredCount}/${totalStudents} alunos responderam`);
+
+    // Se todos os alunos responderam, encerrar pergunta automaticamente
+    if (answeredCount === totalStudents && totalStudents > 0) {
+      console.log(`✅ Todos os alunos responderam! Encerrando pergunta automaticamente...`);
+      endQuestion(room);
+    }
   });
 
   // Finalizar pergunta
