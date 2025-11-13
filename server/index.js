@@ -32,7 +32,13 @@ const io = new Server(httpServer, {
     },
     methods: ["GET", "POST"],
     credentials: true
-  }
+  },
+  // Configurações adicionais para produção
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+  // Para funcionar atrás de proxy reverso
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.use(cors({
@@ -301,12 +307,22 @@ async function loadRooms() {
 // Carregar salas ao iniciar
 loadRooms();
 
+// Tratar erros de conexão antes do handshake
+io.engine.on('connection_error', (err) => {
+  console.error('❌ Erro de conexão Socket.IO:', err);
+  console.error('   Detalhes:', err.req?.url, err.code, err.message);
+  console.error('   Context:', err.context);
+});
+
 io.on('connection', (socket) => {
   console.log('✅ Usuário conectado:', socket.id);
+  console.log('   Transport:', socket.conn.transport.name);
+  console.log('   Headers:', socket.handshake.headers);
   
   // Tratar erros de socket
   socket.on('error', (error) => {
     console.error('❌ Erro no socket:', socket.id, error);
+    console.error('   Stack:', error.stack);
   });
   
   socket.on('disconnect', (reason) => {
@@ -710,8 +726,18 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const PORT = process.env.PORT || 3001;
+
+// Tratar erros do servidor HTTP
+httpServer.on('error', (error) => {
+  console.error('❌ Erro no servidor HTTP:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`   Porta ${PORT} já está em uso!`);
+  }
+});
+
 httpServer.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Socket.IO path: /socket.io/`);
   if (process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
