@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 
 const app = express();
 const httpServer = createServer(app);
@@ -53,6 +55,92 @@ app.use(express.json());
 const rooms = new Map();
 const users = new Map();
 
+// Configuração de persistência
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const dataDir = join(__dirname, 'data');
+const roomsFile = join(dataDir, 'rooms.json');
+
+// Função para converter Map de answers para objeto serializável
+function serializeRoom(room) {
+  return {
+    id: room.id,
+    teacherId: room.teacherId,
+    teacherName: room.teacherName,
+    students: room.students,
+    status: room.status,
+    currentQuestion: room.currentQuestion,
+    questionIndex: room.questionIndex,
+    questions: room.questions,
+    answers: Array.from(room.answers.entries()),
+    startTime: room.startTime
+  };
+}
+
+// Função para deserializar room
+function deserializeRoom(data) {
+  return {
+    id: data.id,
+    teacherId: data.teacherId,
+    teacherName: data.teacherName,
+    students: data.students || [],
+    status: data.status || 'waiting',
+    currentQuestion: data.currentQuestion || null,
+    questionIndex: data.questionIndex || 0,
+    questions: data.questions || [],
+    answers: new Map(data.answers || []),
+    timer: null,
+    startTime: data.startTime || null
+  };
+}
+
+// Salvar salas em arquivo
+async function saveRooms() {
+  try {
+    // Criar diretório se não existir
+    if (!existsSync(dataDir)) {
+      await mkdir(dataDir, { recursive: true });
+    }
+
+    const roomsData = {};
+    for (const [roomId, room] of rooms.entries()) {
+      roomsData[roomId] = serializeRoom(room);
+    }
+
+    await writeFile(roomsFile, JSON.stringify(roomsData, null, 2), 'utf-8');
+    console.log('Salas salvas com sucesso');
+  } catch (error) {
+    console.error('Erro ao salvar salas:', error);
+  }
+}
+
+// Carregar salas do arquivo
+async function loadRooms() {
+  try {
+    if (!existsSync(roomsFile)) {
+      console.log('Arquivo de salas não encontrado, iniciando com salas vazias');
+      return;
+    }
+
+    const data = await readFile(roomsFile, 'utf-8');
+    const roomsData = JSON.parse(data);
+
+    for (const [roomId, roomData] of Object.entries(roomsData)) {
+      // Apenas carregar salas que não estão em andamento (waiting ou finished)
+      if (roomData.status === 'waiting' || roomData.status === 'finished') {
+        rooms.set(roomId, deserializeRoom(roomData));
+      }
+    }
+
+    console.log(`${rooms.size} sala(s) carregada(s) do arquivo`);
+  } catch (error) {
+    console.error('Erro ao carregar salas:', error);
+  }
+}
+
+// Carregar salas ao iniciar
+loadRooms();
+
 io.on('connection', (socket) => {
   console.log('Usuário conectado:', socket.id);
 
@@ -96,6 +184,7 @@ io.on('connection', (socket) => {
       socket.join(roomId);
       socket.emit('room-created', { roomId });
       console.log(`Sala criada: ${roomId} por ${teacherName}`);
+      saveRooms(); // Salvar após criar sala
     }
   });
 
@@ -189,6 +278,7 @@ io.on('connection', (socket) => {
     });
     
     console.log(`${studentName} entrou na sala ${roomId}`);
+    saveRooms(); // Salvar após aluno entrar
   });
 
   // Professor inicia o quiz
@@ -203,6 +293,8 @@ io.on('connection', (socket) => {
     room.status = 'countdown';
     room.questionIndex = 0;
     room.answers.clear();
+
+    saveRooms(); // Salvar após iniciar quiz
 
     // Iniciar contagem regressiva
     io.to(roomId).emit('quiz-starting', { countdown: 5 });
@@ -329,6 +421,8 @@ io.on('connection', (socket) => {
     io.to(room.id).emit('quiz-ended', {
       ranking: ranking
     });
+    
+    saveRooms(); // Salvar após quiz terminar
   }
 
   // Desconectar
@@ -343,12 +437,14 @@ io.on('connection', (socket) => {
           // Professor saiu, encerrar sala
           io.to(user.roomId).emit('room-closed');
           rooms.delete(user.roomId);
+          saveRooms(); // Salvar após deletar sala
         } else {
           // Aluno saiu
           room.students = room.students.filter(s => s.id !== socket.id);
           io.to(user.roomId).emit('students-updated', {
             students: room.students
           });
+          saveRooms(); // Salvar após aluno sair
         }
       }
       

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { getStudentState, saveStudentState, clearStudentState } from '../utils/storage'
 import { getSocketUrl } from '../utils/socketConfig'
@@ -8,7 +8,23 @@ import './StudentRoom.css'
 function StudentRoom() {
   const { roomId } = useParams()
   const [searchParams] = useSearchParams()
-  const studentName = searchParams.get('name') || 'Aluno'
+  const navigate = useNavigate()
+  const nameParam = searchParams.get('name')
+  
+  // Verificar se tem nome, se não tiver, redirecionar para Home
+  useEffect(() => {
+    if (!nameParam || !nameParam.trim()) {
+      // Verificar se há estado salvo com nome
+      const savedState = getStudentState()
+      if (!savedState || !savedState.studentName || savedState.roomId !== roomId) {
+        // Redirecionar para Home com o roomId preenchido
+        navigate(`/?roomId=${roomId}&mode=student`)
+        return
+      }
+    }
+  }, [nameParam, roomId, navigate])
+  
+  const studentName = nameParam || getStudentState()?.studentName || 'Aluno'
   
   const [socket, setSocket] = useState(null)
   const [status, setStatus] = useState('waiting') // waiting, countdown, question, results, finished

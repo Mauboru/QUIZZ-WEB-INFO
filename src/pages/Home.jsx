@@ -1,14 +1,31 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import './Home.css'
 
 function Home() {
+  const [searchParams] = useSearchParams()
   const [name, setName] = useState('')
   const [roomId, setRoomId] = useState('')
   const [isTeacher, setIsTeacher] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const navigate = useNavigate()
+
+  // Ler parâmetros da URL ao carregar
+  useEffect(() => {
+    const urlRoomId = searchParams.get('roomId')
+    const mode = searchParams.get('mode')
+    
+    if (urlRoomId) {
+      setRoomId(urlRoomId.toUpperCase())
+    }
+    
+    if (mode === 'student') {
+      setIsTeacher(false)
+    } else if (mode === 'teacher') {
+      setIsTeacher(true)
+    }
+  }, [searchParams])
 
   const generateRoomId = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase()
