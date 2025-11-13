@@ -125,10 +125,29 @@ async function loadRooms() {
     const data = await readFile(roomsFile, 'utf-8');
     const roomsData = JSON.parse(data);
 
+    console.log(`Carregando ${Object.keys(roomsData).length} sala(s) do arquivo...`);
+    
     for (const [roomId, roomData] of Object.entries(roomsData)) {
-      // Apenas carregar salas que não estão em andamento (waiting ou finished)
+      // Carregar todas as salas, mas apenas restaurar estado se estiver waiting ou finished
+      // Salas em andamento serão resetadas para waiting
       if (roomData.status === 'waiting' || roomData.status === 'finished') {
-        rooms.set(roomId, deserializeRoom(roomData));
+        const deserializedRoom = deserializeRoom(roomData);
+        // Se estiver finished, resetar para waiting para permitir novo quiz
+        if (deserializedRoom.status === 'finished') {
+          deserializedRoom.status = 'waiting';
+          deserializedRoom.questionIndex = 0;
+          deserializedRoom.currentQuestion = null;
+        }
+        rooms.set(roomId, deserializedRoom);
+        console.log(`Sala ${roomId} carregada: ${deserializedRoom.questions.length} pergunta(s), ${deserializedRoom.students.length} aluno(s)`);
+      } else {
+        // Sala em andamento - resetar para waiting
+        const deserializedRoom = deserializeRoom(roomData);
+        deserializedRoom.status = 'waiting';
+        deserializedRoom.questionIndex = 0;
+        deserializedRoom.currentQuestion = null;
+        rooms.set(roomId, deserializedRoom);
+        console.log(`Sala ${roomId} resetada para waiting (estava em ${roomData.status})`);
       }
     }
 
@@ -220,12 +239,16 @@ io.on('connection', (socket) => {
 
   // Entrar na sala (aluno)
   socket.on('join-room', ({ roomId, studentName, reconnect = false, oldSocketId = null }) => {
+    console.log(`Tentativa de entrada: ${studentName} na sala ${roomId}, reconectar: ${reconnect}`);
     const room = rooms.get(roomId);
     
     if (!room) {
-      socket.emit('room-error', { message: 'Sala não encontrada' });
+      console.log(`Sala ${roomId} não encontrada. Salas disponíveis:`, Array.from(rooms.keys()));
+      socket.emit('room-error', { message: 'Sala não encontrada. Verifique o código da sala.' });
       return;
     }
+    
+    console.log(`Sala ${roomId} encontrada. Status: ${room.status}, Alunos: ${room.students.length}`);
 
     // Se for reconexão, encontrar o aluno existente
     if (reconnect && oldSocketId) {

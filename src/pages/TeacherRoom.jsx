@@ -40,8 +40,9 @@ function TeacherRoom() {
 
     // Sempre tentar reconectar primeiro (verificar se sala existe no servidor)
     // Usar estado salvo apenas como fallback temporário
+    const tempQuestions = savedState?.questions || []
     if (savedState) {
-      setQuestions(savedState.questions || [])
+      setQuestions(tempQuestions)
       setStatus(savedState.status || 'waiting')
       setCurrentQuestion(savedState.currentQuestion)
       setQuestionNumber(savedState.questionNumber || 0)
@@ -51,9 +52,19 @@ function TeacherRoom() {
     
     newSocket.on('room-reconnected', ({ students, questions: serverQuestions, status: serverStatus, currentQuestion: serverQuestion, questionNumber: serverQNum }) => {
       setStudents(students || [])
-      // Sempre usar dados do servidor se disponíveis
-      if (serverQuestions !== undefined) {
-        setQuestions(serverQuestions || [])
+      // SEMPRE usar dados do servidor - se tiver perguntas no servidor, usar elas
+      // Se não tiver no servidor mas tiver localmente, manter local até salvar
+      if (serverQuestions !== undefined && serverQuestions !== null && Array.isArray(serverQuestions)) {
+        // Se servidor tem perguntas, usar elas (mesmo que vazio)
+        setQuestions(serverQuestions)
+        // Se servidor não tem mas local tem, salvar local no servidor
+        if (serverQuestions.length === 0 && tempQuestions.length > 0) {
+          newSocket.emit('save-questions', { roomId, questions: tempQuestions })
+        }
+      } else if (tempQuestions.length > 0) {
+        // Se servidor não tem perguntas mas local tem, manter local e salvar
+        setQuestions(tempQuestions)
+        newSocket.emit('save-questions', { roomId, questions: tempQuestions })
       }
       if (serverStatus !== undefined) {
         setStatus(serverStatus)
@@ -66,10 +77,15 @@ function TeacherRoom() {
       }
     })
     
-    // Se não houver sala no servidor, criar nova
+    // Se não houver sala no servidor, criar nova mas manter perguntas locais
     newSocket.on('room-created', ({ roomId: createdRoomId }) => {
       if (createdRoomId === roomId) {
-        // Sala foi criada, limpar perguntas se não vieram do servidor
+        // Sala foi criada nova, mas manter perguntas locais se existirem
+        if (tempQuestions.length > 0) {
+          setQuestions(tempQuestions)
+          // Salvar perguntas locais no servidor
+          newSocket.emit('save-questions', { roomId, questions: tempQuestions })
+        }
         console.log('Nova sala criada')
       }
     })

@@ -65,6 +65,7 @@ function StudentRoom() {
       if (!reconnected) {
         setStatus('waiting')
       }
+      console.log('Aluno entrou na sala:', roomId)
     })
 
     newSocket.on('room-state', ({ status: serverStatus, currentQuestion: serverQuestion, questionIndex, questionNumber: serverQNum, students: serverStudents }) => {
@@ -81,14 +82,20 @@ function StudentRoom() {
     })
 
     newSocket.on('room-error', ({ message }) => {
-      alert(message)
+      console.error('Erro ao entrar na sala:', message)
+      alert(`Erro: ${message}`)
       clearStudentState()
+      // Não redirecionar imediatamente, dar chance de tentar novamente
     })
 
     newSocket.on('room-not-found', () => {
-      alert('Sala não encontrada')
+      console.error('Sala não encontrada:', roomId)
+      alert('Sala não encontrada. Verifique o código da sala.')
       clearStudentState()
-      window.location.href = '/'
+      // Redirecionar para home após 2 segundos
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 2000)
     })
 
     newSocket.on('students-updated', ({ students }) => {
