@@ -21,6 +21,7 @@ function TeacherRoom() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [answersReceived, setAnswersReceived] = useState(0)
   const [ranking, setRanking] = useState([])
+  const [rankingDate, setRankingDate] = useState(null)
   const [showQuestionForm, setShowQuestionForm] = useState(false)
   const [showQR, setShowQR] = useState(false)
   const [newQuestion, setNewQuestion] = useState({
@@ -79,7 +80,7 @@ function TeacherRoom() {
       console.error('❌ Erro de conexão:', error)
     })
     
-    newSocket.on('room-reconnected', ({ students, questions: serverQuestions, status: serverStatus, currentQuestion: serverQuestion, questionNumber: serverQNum }) => {
+    newSocket.on('room-reconnected', ({ students, questions: serverQuestions, status: serverStatus, currentQuestion: serverQuestion, questionNumber: serverQNum, finalRanking, rankingDate }) => {
       setStudents(students || [])
       // SEMPRE usar dados do servidor - se tiver perguntas no servidor, usar elas
       // Se não tiver no servidor mas tiver localmente, manter local até salvar
@@ -103,6 +104,17 @@ function TeacherRoom() {
       }
       if (serverQNum !== undefined) {
         setQuestionNumber(serverQNum)
+      }
+      // Carregar ranking salvo se existir
+      if (finalRanking && Array.isArray(finalRanking) && finalRanking.length > 0) {
+        setRanking(finalRanking)
+        if (rankingDate) {
+          setRankingDate(rankingDate)
+        }
+        // Se tiver ranking, garantir que o status seja 'finished'
+        if (serverStatus !== 'finished') {
+          setStatus('finished')
+        }
       }
     })
     
@@ -320,9 +332,12 @@ function TeacherRoom() {
       setStatus('results')
     })
 
-    socket.on('quiz-ended', ({ ranking }) => {
+    socket.on('quiz-ended', ({ ranking, date }) => {
       setStatus('finished')
       setRanking(ranking)
+      if (date) {
+        setRankingDate(date)
+      }
     })
   }, [socket])
 
@@ -488,6 +503,17 @@ function TeacherRoom() {
       {status === 'finished' && (
         <div className="ranking-screen">
           <h2>🏆 Ranking Final</h2>
+          {rankingDate && (
+            <p className="ranking-date">
+              📅 Realizado em: {new Date(rankingDate).toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          )}
           <div className="ranking-list">
             {ranking.map((student, index) => (
               <div

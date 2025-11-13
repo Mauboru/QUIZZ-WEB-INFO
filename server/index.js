@@ -92,7 +92,9 @@ function serializeRoom(room) {
     questionIndex: room.questionIndex,
     questions: room.questions,
     answers: Array.from(room.answers.entries()),
-    startTime: room.startTime
+    startTime: room.startTime,
+    finalRanking: room.finalRanking || null,
+    rankingDate: room.rankingDate || null
   };
 }
 
@@ -109,7 +111,9 @@ function deserializeRoom(data) {
     questions: data.questions || [],
     answers: new Map(data.answers || []),
     timer: null,
-    startTime: data.startTime || null
+    startTime: data.startTime || null,
+    finalRanking: data.finalRanking || null,
+    rankingDate: data.rankingDate || null
   };
 }
 
@@ -387,7 +391,9 @@ io.on('connection', (socket) => {
         status: existingRoom.status,
         currentQuestion: existingRoom.currentQuestion,
         questionIndex: existingRoom.questionIndex,
-        questionNumber: existingRoom.questionIndex + 1
+        questionNumber: existingRoom.questionIndex + 1,
+        finalRanking: existingRoom.finalRanking || null,
+        rankingDate: existingRoom.rankingDate || null
       });
       
       console.log(`👨‍🏫 Professor reconectado: ${roomId} por ${teacherName}, ${existingRoom.students.length} aluno(s) na sala`);
@@ -723,11 +729,17 @@ io.on('connection', (socket) => {
       .map(s => ({ name: s.name, score: s.score, total: room.questions.length }))
       .sort((a, b) => b.score - a.score);
 
+    // Salvar ranking final com data
+    room.finalRanking = ranking;
+    room.rankingDate = new Date().toISOString();
+
     io.to(room.id).emit('quiz-ended', {
-      ranking: ranking
+      ranking: ranking,
+      date: room.rankingDate
     });
     
     saveRooms(); // Salvar após quiz terminar
+    console.log(`📊 Ranking final salvo para sala ${room.id} em ${room.rankingDate}`);
   }
 
   // Desconectar
