@@ -205,8 +205,44 @@ async function loadRooms() {
       return;
     }
 
-    const data = await readFile(roomsFile, 'utf-8');
-    const roomsData = JSON.parse(data);
+    // Ler e validar arquivo
+    let data;
+    try {
+      data = await readFile(roomsFile, 'utf-8');
+      
+      // Verificar se arquivo está vazio ou inválido
+      if (!data || data.trim() === '' || data.trim() === '{}') {
+        console.log(`📄 Arquivo existe mas está vazio, iniciando com salas vazias`);
+        // Garantir que o arquivo tem conteúdo válido
+        await writeFile(roomsFile, '{}', { mode: 0o664 });
+        return;
+      }
+    } catch (readError) {
+      console.error(`❌ Erro ao ler arquivo: ${readError.message}`);
+      console.error(`   Tentando recriar arquivo...`);
+      await writeFile(roomsFile, '{}', { mode: 0o664 });
+      return;
+    }
+
+    // Tentar fazer parse do JSON
+    let roomsData;
+    try {
+      roomsData = JSON.parse(data);
+    } catch (parseError) {
+      console.error(`❌ Erro ao fazer parse do JSON: ${parseError.message}`);
+      console.error(`   Arquivo pode estar corrompido. Recriando...`);
+      // Fazer backup do arquivo corrompido
+      const { rename } = await import('fs/promises');
+      try {
+        await rename(roomsFile, roomsFile + '.backup.' + Date.now());
+        console.log(`   Backup do arquivo corrompido criado`);
+      } catch (backupError) {
+        console.warn(`   Não foi possível criar backup: ${backupError.message}`);
+      }
+      // Criar novo arquivo vazio
+      await writeFile(roomsFile, '{}', { mode: 0o664 });
+      return;
+    }
 
     console.log(`Carregando ${Object.keys(roomsData).length} sala(s) do arquivo...`);
     
