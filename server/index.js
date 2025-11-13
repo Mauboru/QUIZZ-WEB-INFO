@@ -55,6 +55,19 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Middleware de logging para TODAS as requisições
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.headers.origin || 'N/A'}`);
+  console.log(`   Headers:`, JSON.stringify(req.headers, null, 2));
+  next();
+});
+
+// Endpoint de teste para verificar se o servidor está acessível
+app.get('/api/test', (req, res) => {
+  console.log('✅ Endpoint de teste acessado');
+  res.json({ status: 'ok', message: 'Servidor está funcionando', timestamp: new Date().toISOString() });
+});
+
 // Servir arquivos estáticos do frontend será configurado no final, após Socket.io
 
 // Armazenamento em memória (em produção, use um banco de dados)
@@ -312,6 +325,23 @@ io.engine.on('connection_error', (err) => {
   console.error('❌ Erro de conexão Socket.IO:', err);
   console.error('   Detalhes:', err.req?.url, err.code, err.message);
   console.error('   Context:', err.context);
+  console.error('   Stack:', err.stack);
+});
+
+// Log quando alguém tenta conectar
+io.engine.on('connection', (socket) => {
+  console.log('🔌 Tentativa de conexão recebida');
+});
+
+// Tratar erros não capturados
+process.on('uncaughtException', (error) => {
+  console.error('❌ Erro não capturado:', error);
+  console.error('   Stack:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Promise rejeitada não tratada:', reason);
+  console.error('   Promise:', promise);
 });
 
 io.on('connection', (socket) => {

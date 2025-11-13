@@ -35,13 +35,24 @@ function TeacherRoom() {
     const savedState = getTeacherState()
     const isReconnect = savedState && savedState.roomId === roomId
 
-    const newSocket = io(getSocketUrl())
+    const socketUrl = getSocketUrl()
+    console.log('🔌 Tentando conectar ao Socket.IO:', socketUrl)
+    
+    const newSocket = io(socketUrl, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 20000
+    })
     
     // Definir socket imediatamente
     setSocket(newSocket)
     
     // Também salvar globalmente para acesso imediato
     window.currentTeacherSocket = newSocket
+    
+    console.log('🔌 Socket criado, aguardando conexão...')
 
     // Sempre tentar reconectar primeiro (verificar se sala existe no servidor)
     // Usar estado salvo apenas como fallback temporário
