@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSocketUrl } from '../utils/socketConfig'
-import { FaCheckCircle, FaClock, FaArrowLeft, FaArrowRight, FaExclamationTriangle, FaTimes } from 'react-icons/fa'
+import { FaCheckCircle, FaClock, FaArrowLeft, FaArrowRight, FaExclamationTriangle, FaTimes, FaCheck } from 'react-icons/fa'
 import './AsyncQuiz.css'
 
 function AsyncQuiz() {
@@ -19,6 +19,7 @@ function AsyncQuiz() {
   const [quizFinished, setQuizFinished] = useState(false)
   const [score, setScore] = useState(0)
   const [warningCount, setWarningCount] = useState(0)
+  const [quizResults, setQuizResults] = useState([]) // Array com detalhes de cada questão
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -399,6 +400,8 @@ function AsyncQuiz() {
       const finalAnswers = []
       let finalScore = 0
 
+      const results = []
+      
       shuffledQuiz.questions.forEach((question, index) => {
         const answerIndex = answers.get(index)
         if (answerIndex !== undefined && answerIndex !== null) {
@@ -407,6 +410,14 @@ function AsyncQuiz() {
           
           // Validar contra a resposta correta original
           const isCorrect = originalAnswerIndex === question.originalCorrectAnswer
+          
+          // Armazenar detalhes para exibição
+          results.push({
+            questionText: question.text,
+            userAnswer: question.options[answerIndex], // Resposta escolhida pelo usuário
+            isCorrect: isCorrect,
+            questionNumber: index + 1
+          })
 
           finalAnswers.push({
             questionIndex: question.originalIndex !== undefined ? question.originalIndex : index,
@@ -421,6 +432,9 @@ function AsyncQuiz() {
           }
         }
       })
+      
+      // Salvar resultados para exibição
+      setQuizResults(results)
 
       const socketUrl = getSocketUrl()
       const response = await fetch(`${socketUrl.replace('/socket.io', '')}/api/async/submit-quiz`, {
@@ -461,6 +475,22 @@ function AsyncQuiz() {
   }
 
   if (quizFinished) {
+    // Calcular nota numérica (cada questão vale 2 pontos, total 40)
+    const numericScore = score * 2
+    const totalPoints = shuffledQuiz.questions.length * 2
+    
+    // Calcular nota em letra baseada no número de acertos
+    let letterGrade = ''
+    if (score >= 0 && score <= 6) {
+      letterGrade = 'D'
+    } else if (score >= 7 && score <= 12) {
+      letterGrade = 'C'
+    } else if (score >= 13 && score <= 17) {
+      letterGrade = 'B'
+    } else if (score >= 18 && score <= 20) {
+      letterGrade = 'A'
+    }
+    
     return (
       <div className="async-quiz-container">
         <div className="quiz-container">
@@ -468,10 +498,46 @@ function AsyncQuiz() {
             <h1><FaCheckCircle /> Quiz Concluído!</h1>
             <div className="score-display">
               <h2>Você acertou {score} de {shuffledQuiz.questions.length} perguntas</h2>
+              <div className="grade-info">
+                <div className="numeric-grade">
+                  <span className="grade-label">Nota:</span>
+                  <span className="grade-value">{numericScore}/{totalPoints}</span>
+                </div>
+                <div className="letter-grade">
+                  <span className="grade-label">Conceito:</span>
+                  <span className={`letter-grade-value grade-${letterGrade.toLowerCase()}`}>{letterGrade}</span>
+                </div>
+              </div>
               <p className="score-percentage">
                 {Math.round((score / shuffledQuiz.questions.length) * 100)}%
               </p>
             </div>
+            
+            {/* Lista de questões */}
+            <div className="questions-review">
+              <h3>Revisão das Questões</h3>
+              {quizResults.map((result, index) => (
+                <div key={index} className={`question-review-item ${result.isCorrect ? 'correct' : 'incorrect'}`}>
+                  <div className="question-review-header">
+                    <span className="question-number">Questão {result.questionNumber}</span>
+                    {result.isCorrect ? (
+                      <span className="result-badge correct-badge">
+                        <FaCheck /> Acertou
+                      </span>
+                    ) : (
+                      <span className="result-badge incorrect-badge">
+                        <FaTimes /> Errou
+                      </span>
+                    )}
+                  </div>
+                  <p className="question-text">{result.questionText}</p>
+                  <div className="user-answer">
+                    <strong>Sua resposta:</strong> {result.userAnswer}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
             <button className="btn-primary" onClick={() => navigate('/async-home')}>
               Voltar para Lista de Quizzes
             </button>

@@ -108,5 +108,115 @@
     ],
     "correctAnswer": 1,
     "time": 35
+  },
+  {
+    "text": "Qual é a diferença entre 'let' e 'const' em JavaScript?",
+    "options": [
+      "Não há diferença, são sinônimos",
+      "'let' permite reatribuição, 'const' não permite",
+      "'const' permite reatribuição, 'let' não permite",
+      "Ambos são usados apenas para funções"
+    ],
+    "correctAnswer": 1,
+    "time": 30
+  },
+  {
+    "text": "Qual tag HTML é usada para criar um parágrafo?",
+    "options": [
+      "<p>",
+      "<paragraph>",
+      "<text>",
+      "<para>"
+    ],
+    "correctAnswer": 0,
+    "time": 20
+  },
+  {
+    "text": "Qual tag HTML é usada para criar um link?",
+    "options": [
+      "<link>",
+      "<a>",
+      "<url>",
+      "<href>"
+    ],
+    "correctAnswer": 1,
+    "time": 20
+  },
+  {
+    "text": "O que significa 'responsivo' em design web?",
+    "options": [
+      "Sites que respondem rapidamente ao servidor",
+      "Layouts que se adaptam a diferentes tamanhos de tela",
+      "Sites que usam apenas JavaScript",
+      "Design que funciona apenas em desktop"
+    ],
+    "correctAnswer": 1,
+    "time": 30
+  },
+  {
+    "text": "Qual é a diferença entre '==' e '===' em JavaScript?",
+    "options": [
+      "'==' compara valor e tipo, '===' compara apenas valor",
+      "'===' compara valor e tipo, '==' compara apenas valor",
+      "Não há diferença entre eles",
+      "'==' é usado apenas para strings"
+    ],
+    "correctAnswer": 1,
+    "time": 35
+  },
+  {
+    "text": "Qual propriedade CSS é usada para mudar a cor do texto?",
+    "options": [
+      "text-color",
+      "color",
+      "font-color",
+      "text-style"
+    ],
+    "correctAnswer": 1,
+    "time": 20
+  },
+  {
+    "text": "Qual propriedade CSS é usada para criar espaçamento entre elementos?",
+    "options": [
+      "spacing",
+      "margin ou padding",
+      "distance",
+      "gap-only"
+    ],
+    "correctAnswer": 1,
+    "time": 30
+  },
+  {
+    "text": "O que é o método 'addEventListener' em JavaScript?",
+    "options": [
+      "Adiciona um novo elemento ao DOM",
+      "Registra um manipulador de eventos em um elemento",
+      "Remove eventos de um elemento",
+      "Cria uma nova função"
+    ],
+    "correctAnswer": 1,
+    "time": 30
+  },
+  {
+    "text": "Qual propriedade CSS é usada para mudar o tamanho da fonte?",
+    "options": [
+      "text-size",
+      "font-size",
+      "size",
+      "font-style"
+    ],
+    "correctAnswer": 1,
+    "time": 20
+  },
+  {
+    "text": "Qual tag HTML é usada para criar um título principal?",
+    "options": [
+      "<h1>",
+      "<title>",
+      "<header>",
+      "<main>"
+    ],
+    "correctAnswer": 0,
+    "time": 20
   }
 ]

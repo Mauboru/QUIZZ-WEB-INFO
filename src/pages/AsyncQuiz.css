@@ -257,6 +257,155 @@
   margin: 0;
 }
 
+.grade-info {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.numeric-grade,
+.letter-grade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.grade-label {
+  font-size: 14px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.grade-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+}
+
+.letter-grade-value {
+  font-size: 48px;
+  font-weight: bold;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid white;
+}
+
+.grade-a {
+  background: #4caf50;
+  color: white;
+}
+
+.grade-b {
+  background: #2196f3;
+  color: white;
+}
+
+.grade-c {
+  background: #ff9800;
+  color: white;
+}
+
+.grade-d {
+  background: #f44336;
+  color: white;
+}
+
+.questions-review {
+  margin: 40px 0;
+  text-align: left;
+  max-width: 100%;
+}
+
+.questions-review h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.question-review-item {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 15px;
+  transition: all 0.3s;
+}
+
+.question-review-item.correct {
+  border-color: #4caf50;
+  background: #f1f8f4;
+}
+
+.question-review-item.incorrect {
+  border-color: #f44336;
+  background: #fff5f5;
+}
+
+.question-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.question-number {
+  font-weight: bold;
+  color: #667eea;
+  font-size: 16px;
+}
+
+.result-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.correct-badge {
+  background: #4caf50;
+  color: white;
+}
+
+.incorrect-badge {
+  background: #f44336;
+  color: white;
+}
+
+.question-text {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.user-answer {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  color: #555;
+  font-size: 15px;
+}
+
+.user-answer strong {
+  color: #333;
+  margin-right: 8px;
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;

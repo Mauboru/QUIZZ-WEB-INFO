@@ -1,8 +1,9 @@
 {
-  "quiz_1765240660885_zlra2b5": {
-    "id": "quiz_1765240660885_zlra2b5",
+  "quiz_1765243337669_dpfqco1": {
+    "id": "quiz_1765243337669_dpfqco1",
     "title": "Recuperação de WEB I",
-    "description": "boa sorte!!",
+    "description": "",
+    "hasTimeLimit": false,
     "questions": [
       {
         "id": "q_0",
@@ -123,11 +124,131 @@
         ],
         "correctAnswer": 1,
         "time": 35
+      },
+      {
+        "id": "q_10",
+        "text": "Qual é a diferença entre 'let' e 'const' em JavaScript?",
+        "options": [
+          "Não há diferença, são sinônimos",
+          "'let' permite reatribuição, 'const' não permite",
+          "'const' permite reatribuição, 'let' não permite",
+          "Ambos são usados apenas para funções"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_11",
+        "text": "Qual tag HTML é usada para criar um parágrafo?",
+        "options": [
+          "<p>",
+          "<paragraph>",
+          "<text>",
+          "<para>"
+        ],
+        "correctAnswer": 0,
+        "time": 20
+      },
+      {
+        "id": "q_12",
+        "text": "Qual tag HTML é usada para criar um link?",
+        "options": [
+          "<link>",
+          "<a>",
+          "<url>",
+          "<href>"
+        ],
+        "correctAnswer": 1,
+        "time": 20
+      },
+      {
+        "id": "q_13",
+        "text": "O que significa 'responsivo' em design web?",
+        "options": [
+          "Sites que respondem rapidamente ao servidor",
+          "Layouts que se adaptam a diferentes tamanhos de tela",
+          "Sites que usam apenas JavaScript",
+          "Design que funciona apenas em desktop"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_14",
+        "text": "Qual é a diferença entre '==' e '===' em JavaScript?",
+        "options": [
+          "'==' compara valor e tipo, '===' compara apenas valor",
+          "'===' compara valor e tipo, '==' compara apenas valor",
+          "Não há diferença entre eles",
+          "'==' é usado apenas para strings"
+        ],
+        "correctAnswer": 1,
+        "time": 35
+      },
+      {
+        "id": "q_15",
+        "text": "Qual propriedade CSS é usada para mudar a cor do texto?",
+        "options": [
+          "text-color",
+          "color",
+          "font-color",
+          "text-style"
+        ],
+        "correctAnswer": 1,
+        "time": 20
+      },
+      {
+        "id": "q_16",
+        "text": "Qual propriedade CSS é usada para criar espaçamento entre elementos?",
+        "options": [
+          "spacing",
+          "margin ou padding",
+          "distance",
+          "gap-only"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_17",
+        "text": "O que é o método 'addEventListener' em JavaScript?",
+        "options": [
+          "Adiciona um novo elemento ao DOM",
+          "Registra um manipulador de eventos em um elemento",
+          "Remove eventos de um elemento",
+          "Cria uma nova função"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_18",
+        "text": "Qual propriedade CSS é usada para mudar o tamanho da fonte?",
+        "options": [
+          "text-size",
+          "font-size",
+          "size",
+          "font-style"
+        ],
+        "correctAnswer": 1,
+        "time": 20
+      },
+      {
+        "id": "q_19",
+        "text": "Qual tag HTML é usada para criar um título principal?",
+        "options": [
+          "<h1>",
+          "<title>",
+          "<header>",
+          "<main>"
+        ],
+        "correctAnswer": 0,
+        "time": 20
       }
     ],
     "creatorName": "Josue Henrique",
     "creatorId": "user_1765240446053_b2xy1f6",
     "isActive": true,
-    "createdAt": "2025-12-09T00:37:40.885Z"
+    "createdAt": "2025-12-09T01:22:17.669Z"
   }
 }
