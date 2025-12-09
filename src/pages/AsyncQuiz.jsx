@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSocketUrl } from '../utils/socketConfig'
-import { FaCheckCircle, FaClock, FaArrowLeft, FaArrowRight } from 'react-icons/fa'
+import { FaCheckCircle, FaClock, FaArrowLeft, FaArrowRight, FaExclamationTriangle, FaTimes } from 'react-icons/fa'
 import './AsyncQuiz.css'
 
 function AsyncQuiz() {
@@ -18,7 +18,151 @@ function AsyncQuiz() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [quizFinished, setQuizFinished] = useState(false)
   const [score, setScore] = useState(0)
+  const [warningCount, setWarningCount] = useState(0)
+  const [showModal, setShowModal] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
 
+  const preventDefault = (e) => {
+    e.preventDefault()
+    return false
+  }
+  
+  const handleCheatingDetected = (reason) => {
+    if (quizFinished) return
+    
+    setWarningCount(prev => prev + 1)
+    setModalMessage(`⚠️ AVISO: ${reason}\n\nPor favor, mantenha o foco na tela do quiz.`)
+    setShowModal(true)
+  }
+  
+  const handleKeyDown = (e) => {
+    // Bloquear F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+P, Print Screen
+    if (
+      e.key === 'F12' ||
+      (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+      (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) ||
+      (e.ctrlKey && e.key === 'p') ||
+      (e.key === 'PrintScreen') ||
+      (e.ctrlKey && e.key === 'c') ||
+      (e.ctrlKey && e.key === 'v') ||
+      (e.ctrlKey && e.key === 'x')
+    ) {
+      e.preventDefault()
+      handleCheatingDetected('Atalho de teclado bloqueado')
+      return false
+    }
+  }
+  
+  const handleVisibilityChange = () => {
+    if (document.hidden && !quizFinished && shuffledQuiz) {
+      handleCheatingDetected('Saída da tela detectada')
+    }
+  }
+  
+  const handleWindowBlur = () => {
+    if (!quizFinished && shuffledQuiz) {
+      handleCheatingDetected('Janela perdeu o foco')
+    }
+  }
+  
+  const handleWindowFocus = () => {
+    // Apenas log quando voltar
+  }
+  
+  const devtoolsIntervalRef = useRef(null)
+  
+  const setupAntiCheat = () => {
+    // Bloquear seleção de texto
+    document.addEventListener('selectstart', preventDefault)
+    document.addEventListener('copy', preventDefault)
+    document.addEventListener('cut', preventDefault)
+    document.addEventListener('paste', preventDefault)
+    
+    // Bloquear menu de contexto (botão direito)
+    document.addEventListener('contextmenu', preventDefault)
+    
+    // Bloquear atalhos de teclado
+    document.addEventListener('keydown', handleKeyDown)
+    
+    // Detectar saída da tela/aba
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('blur', handleWindowBlur)
+    window.addEventListener('focus', handleWindowFocus)
+    
+    // Bloquear drag and drop
+    document.addEventListener('dragstart', preventDefault)
+    document.addEventListener('drop', preventDefault)
+    
+    // Detectar tentativa de abrir DevTools
+    let devtools = { open: false }
+    const element = new Image()
+    Object.defineProperty(element, 'id', {
+      get: function() {
+        devtools.open = true
+        handleCheatingDetected('DevTools detectado')
+      }
+    })
+    
+    devtoolsIntervalRef.current = setInterval(() => {
+      devtools.open = false
+      console.log(element)
+      if (devtools.open) {
+        handleCheatingDetected('DevTools detectado')
+      }
+    }, 1000)
+    
+    // Bloquear console
+    const originalConsole = window.console
+    window.console = {
+      ...originalConsole,
+      log: () => {},
+      warn: () => {},
+      error: () => {},
+      info: () => {},
+      debug: () => {}
+    }
+    
+    // Avisar antes de sair da página
+    const handleBeforeUnload = (e) => {
+      if (!quizFinished) {
+        e.preventDefault()
+        e.returnValue = 'Você está fazendo um quiz. Tem certeza que deseja sair?'
+        return e.returnValue
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    // Restaurar console na limpeza
+    return () => {
+      if (devtoolsIntervalRef.current) {
+        clearInterval(devtoolsIntervalRef.current)
+        devtoolsIntervalRef.current = null
+      }
+      window.console = originalConsole
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }
+  
+  const cleanupAntiCheat = () => {
+    document.removeEventListener('selectstart', preventDefault)
+    document.removeEventListener('copy', preventDefault)
+    document.removeEventListener('cut', preventDefault)
+    document.removeEventListener('paste', preventDefault)
+    document.removeEventListener('contextmenu', preventDefault)
+    document.removeEventListener('keydown', handleKeyDown)
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+    window.removeEventListener('blur', handleWindowBlur)
+    window.removeEventListener('focus', handleWindowFocus)
+    document.removeEventListener('dragstart', preventDefault)
+    document.removeEventListener('drop', preventDefault)
+    
+    if (devtoolsIntervalRef.current) {
+      clearInterval(devtoolsIntervalRef.current)
+      devtoolsIntervalRef.current = null
+    }
+  }
+  
   useEffect(() => {
     if (!userId) {
       navigate('/async-home')
@@ -26,6 +170,22 @@ function AsyncQuiz() {
     }
     loadQuiz()
   }, [quizId, userId, navigate])
+  
+  // Ativar proteções quando o quiz começar
+  useEffect(() => {
+    if (!shuffledQuiz || quizFinished) {
+      cleanupAntiCheat()
+      return
+    }
+    
+    const cleanup = setupAntiCheat()
+    
+    return () => {
+      if (cleanup) cleanup()
+      cleanupAntiCheat()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shuffledQuiz, quizFinished])
 
   useEffect(() => {
     if (quiz && !shuffledQuiz) {
@@ -74,18 +234,18 @@ function AsyncQuiz() {
       if (data.success) {
         // Verificar se o usuário é o criador do quiz
         if (data.quiz.creatorId === userId) {
-          alert('Você não pode fazer seu próprio quiz! Use a opção "Ver Resultados" para gerenciar seu quiz.')
+          showAlert('Você não pode fazer seu próprio quiz! Use a opção "Ver Resultados" para gerenciar seu quiz.')
           navigate('/async-home')
           return
         }
         setQuiz(data.quiz)
       } else {
-        alert('Quiz não encontrado')
+        showAlert('Quiz não encontrado')
         navigate('/async-home')
       }
     } catch (err) {
       console.error('Erro ao carregar quiz:', err)
-      alert('Erro ao carregar quiz')
+      showAlert('Erro ao carregar quiz')
       navigate('/async-home')
     }
   }
@@ -160,8 +320,14 @@ function AsyncQuiz() {
       if (currentQuestionIndex < shuffledQuiz.questions.length - 1) {
         setCurrentQuestionIndex(prev => prev + 1)
       } else {
-        // Finalizar quiz
-        await finishQuiz()
+        // Verificar se todas as perguntas foram respondidas antes de finalizar
+        const allAnswered = allQuestionsAnswered()
+        if (!allAnswered) {
+          showAlert('Por favor, responda todas as perguntas antes de finalizar o quiz.')
+          return
+        }
+        // Mostrar modal de confirmação
+        setShowConfirmModal(true)
       }
     }
     // Se não tiver tempo, apenas salva a resposta (usuário navega manualmente)
@@ -187,7 +353,36 @@ function AsyncQuiz() {
     }
   }
 
+  // Verificar se todas as perguntas foram respondidas
+  const allQuestionsAnswered = () => {
+    if (!shuffledQuiz) return false
+    // Verificar se todas as perguntas têm resposta salva
+    // Também considerar a resposta atual se estiver selecionada
+    for (let i = 0; i < shuffledQuiz.questions.length; i++) {
+      if (i === currentQuestionIndex && selectedAnswer !== null) {
+        // Se é a pergunta atual e tem resposta selecionada, considerar respondida
+        continue
+      }
+      if (!answers.has(i)) {
+        return false
+      }
+    }
+    return true
+  }
+  
   const handleFinalizeQuiz = async () => {
+    // Verificar se todas as perguntas foram respondidas
+    if (!allQuestionsAnswered()) {
+      showAlert('Por favor, responda todas as perguntas antes de finalizar o quiz.')
+      return
+    }
+    
+    // Mostrar modal de confirmação
+    setShowConfirmModal(true)
+  }
+  
+  const confirmFinalizeQuiz = async () => {
+    setShowConfirmModal(false)
     // Salvar última resposta
     if (selectedAnswer !== null) {
       saveAnswer(selectedAnswer)
@@ -249,10 +444,10 @@ function AsyncQuiz() {
       }
     } catch (err) {
       console.error('Erro ao enviar quiz:', err)
-      alert('Erro ao salvar resultado. Tente novamente.')
+      showAlert('Erro ao salvar resultado. Tente novamente.')
     }
   }
-
+  
   if (!userId) {
     return null
   }
@@ -294,6 +489,59 @@ function AsyncQuiz() {
 
   return (
     <div className="async-quiz-container">
+      {/* Modal de Alerta */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <FaExclamationTriangle className="modal-icon" />
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>{modalMessage}</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowModal(false)}>
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Confirmação */}
+      {showConfirmModal && (
+        <div className="modal-overlay" onClick={() => setShowConfirmModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+              <FaCheckCircle className="modal-icon" />
+              <button className="modal-close" onClick={() => setShowConfirmModal(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Tem certeza que deseja finalizar o quiz?</p>
+              <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                Após finalizar, você não poderá mais alterar suas respostas.
+              </p>
+            </div>
+            <div className="modal-footer" style={{ gap: '10px' }}>
+              <button 
+                className="btn-secondary" onClick={() => setShowConfirmModal(false)}
+                style={{ width: 'auto', margin: 0 }}
+              >
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={confirmFinalizeQuiz} style={{ width: 'auto', margin: 0 }}>
+                Sim, Finalizar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="quiz-container">
         <div className="quiz-header">
           <h2>{quiz.title}</h2>
@@ -355,9 +603,9 @@ function AsyncQuiz() {
               <button
                 className="btn-primary"
                 onClick={() => handleAnswerSubmit(selectedAnswer)}
-                disabled={selectedAnswer === null || timeLeft === 0}
+                disabled={selectedAnswer === null || timeLeft === 0 || (currentQuestionIndex === shuffledQuiz.questions.length - 1 && !allQuestionsAnswered())}
               >
-                {currentQuestionIndex < shuffledQuiz.questions.length - 1 ? 'Próxima' : 'Finalizar'}
+                {currentQuestionIndex < shuffledQuiz.questions.length - 1 ? 'Próxima' : (allQuestionsAnswered() ? 'Finalizar' : 'Finalizar (Responda todas)')}
               </button>
             ) : (
               <>
@@ -372,6 +620,7 @@ function AsyncQuiz() {
                   <button
                     className="btn-primary"
                     onClick={handleFinalizeQuiz}
+                    disabled={!allQuestionsAnswered()}
                   >
                     Finalizar Quiz
                   </button>

@@ -80,79 +80,79 @@
     },
     "quiz_1765240660885_zlra2b5": {
       "completed": true,
-      "score": 3,
+      "score": 2,
       "totalQuestions": 10,
-      "submittedAt": "2025-12-09T00:39:07.163Z",
+      "submittedAt": "2025-12-09T00:58:31.512Z",
       "answers": [
         {
           "questionIndex": 7,
-          "answerIndex": 0,
-          "shuffledAnswerIndex": 0,
-          "correct": true,
-          "questionId": "q_7"
-        },
-        {
-          "questionIndex": 0,
-          "answerIndex": 2,
-          "shuffledAnswerIndex": 1,
-          "correct": false,
-          "questionId": "q_0"
-        },
-        {
-          "questionIndex": 1,
           "answerIndex": 2,
           "shuffledAnswerIndex": 2,
           "correct": false,
-          "questionId": "q_1"
+          "questionId": "q_7"
         },
         {
           "questionIndex": 2,
           "answerIndex": 0,
-          "shuffledAnswerIndex": 0,
+          "shuffledAnswerIndex": 3,
           "correct": false,
           "questionId": "q_2"
         },
         {
           "questionIndex": 5,
           "answerIndex": 2,
-          "shuffledAnswerIndex": 1,
+          "shuffledAnswerIndex": 3,
           "correct": false,
           "questionId": "q_5"
         },
         {
-          "questionIndex": 9,
-          "answerIndex": 0,
+          "questionIndex": 6,
+          "answerIndex": 1,
           "shuffledAnswerIndex": 1,
           "correct": false,
-          "questionId": "q_9"
-        },
-        {
-          "questionIndex": 6,
-          "answerIndex": 2,
-          "shuffledAnswerIndex": 0,
-          "correct": true,
           "questionId": "q_6"
         },
         {
+          "questionIndex": 4,
+          "answerIndex": 3,
+          "shuffledAnswerIndex": 3,
+          "correct": false,
+          "questionId": "q_4"
+        },
+        {
+          "questionIndex": 0,
+          "answerIndex": 3,
+          "shuffledAnswerIndex": 3,
+          "correct": false,
+          "questionId": "q_0"
+        },
+        {
+          "questionIndex": 3,
+          "answerIndex": 1,
+          "shuffledAnswerIndex": 3,
+          "correct": true,
+          "questionId": "q_3"
+        },
+        {
           "questionIndex": 8,
-          "answerIndex": 0,
+          "answerIndex": 3,
           "shuffledAnswerIndex": 1,
           "correct": false,
           "questionId": "q_8"
         },
         {
-          "questionIndex": 4,
+          "questionIndex": 1,
           "answerIndex": 1,
-          "shuffledAnswerIndex": 0,
+          "shuffledAnswerIndex": 3,
           "correct": true,
-          "questionId": "q_4"
+          "questionId": "q_1"
         },
         {
-          "questionIndex": 3,
+          "questionIndex": 9,
           "answerIndex": 0,
-          "shuffledAnswerIndex": 0,
+          "shuffledAnswerIndex": 3,
           "correct": false,
-          "questionId": "q_3"
+          "questionId": "q_9"
         }
       ]
     }
