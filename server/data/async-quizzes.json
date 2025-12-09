@@ -1,0 +1,133 @@
+{
+  "quiz_1765240660885_zlra2b5": {
+    "id": "quiz_1765240660885_zlra2b5",
+    "title": "Recuperação de WEB I",
+    "description": "boa sorte!!",
+    "questions": [
+      {
+        "id": "q_0",
+        "text": "Qual é a principal função do Flexbox em layouts CSS?",
+        "options": [
+          "Criar grades complexas bidimensionais",
+          "Controlar o alinhamento e distribuição de itens em um único eixo",
+          "Substituir completamente o uso de media queries",
+          "Renderizar componentes JavaScript"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_1",
+        "text": "Qual característica distingue o CSS Grid do Flexbox?",
+        "options": [
+          "Grid trabalha com layout unidimensional",
+          "Grid permite criar layouts bidimensionais organizando linhas e colunas",
+          "Grid funciona apenas dentro de media queries",
+          "Grid só pode ser usado com frameworks"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_2",
+        "text": "Para que servem media queries?",
+        "options": [
+          "Executar funções JavaScript automaticamente",
+          "Detectar erros de CSS",
+          "Adaptar o layout conforme o tamanho da tela ou dispositivo",
+          "Criar animações CSS"
+        ],
+        "correctAnswer": 2,
+        "time": 30
+      },
+      {
+        "id": "q_3",
+        "text": "Qual é o principal objetivo do Bootstrap?",
+        "options": [
+          "Substituir totalmente HTML e CSS",
+          "Fornecer componentes e classes prontas para criação rápida de interfaces responsivas",
+          "Executar código JavaScript do lado do servidor",
+          "Criar APIs REST"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_4",
+        "text": "Qual das opções representa corretamente a forma básica de declarar uma variável em JavaScript moderno?",
+        "options": [
+          "var x = 10;",
+          "let x = 10;",
+          "def x = 10;",
+          "int x = 10;"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_5",
+        "text": "O que é o DOM no contexto do JavaScript?",
+        "options": [
+          "Um banco de dados interno do navegador",
+          "Um conjunto de APIs para manipulação da estrutura da página",
+          "Um servidor remoto para processar scripts",
+          "Um compilador de arquivos HTML"
+        ],
+        "correctAnswer": 1,
+        "time": 30
+      },
+      {
+        "id": "q_6",
+        "text": "Qual método JavaScript é usado para selecionar um elemento pelo seu ID?",
+        "options": [
+          "querySelectorAll()",
+          "getElementsByClassName()",
+          "getElementById()",
+          "createElement()"
+        ],
+        "correctAnswer": 2,
+        "time": 30
+      },
+      {
+        "id": "q_7",
+        "text": "Qual propriedade Flexbox controla a direção principal dos itens?",
+        "options": [
+          "flex-direction",
+          "justify-content",
+          "align-items",
+          "grid-template-columns"
+        ],
+        "correctAnswer": 0,
+        "time": 30
+      },
+      {
+        "id": "q_8",
+        "text": "Qual evento JavaScript é acionado quando um elemento HTML é clicado?",
+        "options": [
+          "onload",
+          "onchange",
+          "onclick",
+          "onsubmit"
+        ],
+        "correctAnswer": 2,
+        "time": 30
+      },
+      {
+        "id": "q_9",
+        "text": "Em CSS Grid, qual propriedade define o número e tamanho das colunas?",
+        "options": [
+          "grid-columns",
+          "grid-template-columns",
+          "grid-layout",
+          "column-size"
+        ],
+        "correctAnswer": 1,
+        "time": 35
+      }
+    ],
+    "creatorName": "Josue Henrique",
+    "creatorId": "user_1765240446053_b2xy1f6",
+    "isActive": true,
+    "createdAt": "2025-12-09T00:37:40.885Z"
+  }
+}

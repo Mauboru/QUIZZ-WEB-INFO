@@ -4,6 +4,7 @@ import { io } from 'socket.io-client'
 import { QRCodeSVG } from 'qrcode.react'
 import { getTeacherState, saveTeacherState, clearTeacherState } from '../utils/storage'
 import { getSocketUrl } from '../utils/socketConfig'
+import { FaGraduationCap, FaFolderOpen, FaClock } from 'react-icons/fa'
 import './TeacherRoom.css'
 
 function TeacherRoom() {
@@ -346,7 +347,7 @@ function TeacherRoom() {
   return (
     <div className="teacher-room">
       <div className="teacher-header">
-        <h1>🎓 Sala do Professor</h1>
+        <h1><FaGraduationCap /> Sala do Professor</h1>
         <div className="room-code">
           <p>Código: <strong>{roomId}</strong></p>
           <p className="room-url">{studentUrl}</p>
@@ -384,7 +385,7 @@ function TeacherRoom() {
               <h2>Perguntas ({questions.length})</h2>
               <div className="questions-actions">
                 <label className="btn-import">
-                  📁 Importar JSON
+                  <FaFolderOpen /> Importar JSON
                   <input
                     type="file"
                     accept=".json"
@@ -449,7 +450,7 @@ function TeacherRoom() {
               {questions.map((q, index) => (
                 <div key={index} className="question-item">
                   <p><strong>{index + 1}.</strong> {q.text}</p>
-                  <p className="question-time">⏱️ {q.time}s</p>
+                  <p className="question-time"><FaClock /> {q.time}s</p>
                 </div>
               ))}
             </div>
@@ -474,7 +475,7 @@ function TeacherRoom() {
         <div className="question-screen">
           <div className="question-header">
             <span>Pergunta {questionNumber} de {questions.length}</span>
-            <span className="timer">⏱️ {timeLeft}s</span>
+            <span className="timer"><FaClock /> {timeLeft}s</span>
             <span>Respostas: {answersReceived}/{students.length}</span>
           </div>
           <div className="question-display">

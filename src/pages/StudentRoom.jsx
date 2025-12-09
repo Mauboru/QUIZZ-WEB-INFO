@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { getStudentState, saveStudentState, clearStudentState } from '../utils/storage'
 import { getSocketUrl } from '../utils/socketConfig'
+import { FaClock, FaCheckCircle, FaTimes } from 'react-icons/fa'
 import './StudentRoom.css'
 
 function StudentRoom() {
@@ -233,7 +234,7 @@ function StudentRoom() {
         <div className="question-screen">
           <div className="question-header">
             <span>Pergunta {questionNumber} de {totalQuestions || '?'}</span>
-            <span className="timer">⏱️ {timeLeft}s</span>
+            <span className="timer"><FaClock /> {timeLeft}s</span>
           </div>
           <div className="question-content">
             <h2>{currentQuestion.text}</h2>
@@ -260,7 +261,7 @@ function StudentRoom() {
       {status === 'results' && result && currentQuestion && (
         <div className="results-screen">
           <div className={`result-icon ${result.isCorrect ? 'correct' : 'incorrect'}`}>
-            {result.isCorrect ? '✅' : '❌'}
+            {result.isCorrect ? <FaCheckCircle /> : <FaTimes />}
           </div>
           <h2>{result.isCorrect ? 'Parabéns! Você acertou!' : 'Que pena! Você errou'}</h2>
           <div className="result-details">

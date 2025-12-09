@@ -16,3 +16,13 @@ export const getSocketUrl = () => {
   return 'http://localhost:3001'
 }
 
+// Função auxiliar para construir URL da API
+export const getApiUrl = (endpoint) => {
+  const socketUrl = getSocketUrl()
+  // Remover /socket.io se existir, e garantir que não tenha barra dupla
+  let baseUrl = socketUrl.replace('/socket.io', '').replace(/\/$/, '')
+  // Remover barra inicial do endpoint se existir
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  return `${baseUrl}${cleanEndpoint}`
+}
+

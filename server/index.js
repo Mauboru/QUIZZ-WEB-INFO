@@ -68,17 +68,483 @@ app.get('/api/test', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor está funcionando', timestamp: new Date().toISOString() });
 });
 
+// ========== ENDPOINTS PARA MODO ASSÍNCRONO ==========
+
+// Carregar dados assíncronos ao iniciar
+async function loadAsyncData() {
+  try {
+    // Carregar quizzes
+    if (existsSync(asyncQuizzesFile)) {
+      const quizzesData = JSON.parse(await readFile(asyncQuizzesFile, 'utf-8'));
+      for (const [id, quiz] of Object.entries(quizzesData)) {
+        asyncQuizzes.set(id, quiz);
+      }
+      console.log(`📚 Carregados ${asyncQuizzes.size} quiz(zes) assíncrono(s)`);
+    }
+
+    // Carregar usuários
+    if (existsSync(asyncUsersFile)) {
+      const usersData = JSON.parse(await readFile(asyncUsersFile, 'utf-8'));
+      for (const [id, user] of Object.entries(usersData)) {
+        asyncUsers.set(id, user);
+      }
+      console.log(`👥 Carregados ${asyncUsers.size} usuário(s) cadastrado(s)`);
+    }
+
+    // Carregar progresso
+    if (existsSync(asyncProgressFile)) {
+      const progressData = JSON.parse(await readFile(asyncProgressFile, 'utf-8'));
+      for (const [studentId, progress] of Object.entries(progressData)) {
+        asyncProgress.set(studentId, new Map(Object.entries(progress)));
+      }
+      console.log(`📊 Carregado progresso de ${asyncProgress.size} aluno(s)`);
+    }
+  } catch (err) {
+    console.error('❌ Erro ao carregar dados assíncronos:', err);
+  }
+}
+
+// Salvar dados assíncronos
+async function saveAsyncData() {
+  try {
+    // Salvar quizzes
+    const quizzesData = {};
+    for (const [id, quiz] of asyncQuizzes.entries()) {
+      quizzesData[id] = quiz;
+    }
+    await writeFile(asyncQuizzesFile, JSON.stringify(quizzesData, null, 2), { mode: 0o664 });
+
+    // Salvar usuários
+    const usersData = {};
+    for (const [id, user] of asyncUsers.entries()) {
+      usersData[id] = user;
+    }
+    await writeFile(asyncUsersFile, JSON.stringify(usersData, null, 2), { mode: 0o664 });
+
+    // Salvar progresso
+    const progressData = {};
+    for (const [studentId, progress] of asyncProgress.entries()) {
+      progressData[studentId] = Object.fromEntries(progress);
+    }
+    await writeFile(asyncProgressFile, JSON.stringify(progressData, null, 2), { mode: 0o664 });
+  } catch (err) {
+    console.error('❌ Erro ao salvar dados assíncronos:', err);
+  }
+}
+
+// Registrar usuário (unificado)
+app.post('/api/async/register-user', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.json({ success: false, message: 'Nome é obrigatório' });
+    }
+
+    // Verificar se já existe usuário com esse nome
+    for (const [id, user] of asyncUsers.entries()) {
+      if (user.name.toLowerCase() === name.trim().toLowerCase()) {
+        return res.json({ success: false, message: 'Usuário já cadastrado com este nome' });
+      }
+    }
+
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const user = {
+      id: userId,
+      name: name.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    asyncUsers.set(userId, user);
+    await saveAsyncData();
+
+    res.json({ success: true, userId, user });
+  } catch (err) {
+    console.error('Erro ao registrar usuário:', err);
+    res.json({ success: false, message: 'Erro ao registrar usuário' });
+  }
+});
+
+// Login de usuário (unificado)
+app.post('/api/async/login-user', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.json({ success: false, message: 'Nome é obrigatório' });
+    }
+
+    // Buscar usuário pelo nome
+    for (const [id, user] of asyncUsers.entries()) {
+      if (user.name.toLowerCase() === name.trim().toLowerCase()) {
+        return res.json({ success: true, userId: id, user });
+      }
+    }
+
+    res.json({ success: false, message: 'Usuário não encontrado' });
+  } catch (err) {
+    console.error('Erro ao fazer login:', err);
+    res.json({ success: false, message: 'Erro ao fazer login' });
+  }
+});
+
+// Listar quizzes
+app.get('/api/async/quizzes', (req, res) => {
+  try {
+    const quizzes = Array.from(asyncQuizzes.values());
+    res.json({ success: true, quizzes });
+  } catch (err) {
+    console.error('Erro ao listar quizzes:', err);
+    res.json({ success: false, quizzes: [] });
+  }
+});
+
+// Criar quiz
+app.post('/api/async/create-quiz', async (req, res) => {
+  try {
+    const { title, description, questions, hasTimeLimit, creatorName, creatorId } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.json({ success: false, message: 'Título é obrigatório' });
+    }
+
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return res.json({ success: false, message: 'Adicione pelo menos uma pergunta' });
+    }
+
+    const quizId = `quiz_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const quiz = {
+      id: quizId,
+      title: title.trim(),
+      description: description?.trim() || '',
+      hasTimeLimit: hasTimeLimit !== undefined ? hasTimeLimit : true,
+      questions: questions.map((q, index) => ({
+        id: `q_${index}`,
+        text: q.text,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        time: q.time || 30
+      })),
+      creatorName: creatorName || 'Usuário',
+      creatorId: creatorId || null,
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    asyncQuizzes.set(quizId, quiz);
+    await saveAsyncData();
+
+    res.json({ success: true, quiz });
+  } catch (err) {
+    console.error('Erro ao criar quiz:', err);
+    res.json({ success: false, message: 'Erro ao criar quiz' });
+  }
+});
+
+// Obter quiz específico
+app.get('/api/async/quiz/:quizId', (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const quiz = asyncQuizzes.get(quizId);
+    
+    if (!quiz) {
+      return res.json({ success: false, message: 'Quiz não encontrado' });
+    }
+
+    res.json({ success: true, quiz });
+  } catch (err) {
+    console.error('Erro ao obter quiz:', err);
+    res.json({ success: false, message: 'Erro ao obter quiz' });
+  }
+});
+
+// Ativar/Desativar quiz
+app.post('/api/async/toggle-quiz', async (req, res) => {
+  try {
+    const { quizId, isActive } = req.body;
+    const quiz = asyncQuizzes.get(quizId);
+
+    if (!quiz) {
+      return res.json({ success: false, message: 'Quiz não encontrado' });
+    }
+
+    quiz.isActive = isActive;
+    asyncQuizzes.set(quizId, quiz);
+    await saveAsyncData();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erro ao alterar status do quiz:', err);
+    res.json({ success: false, message: 'Erro ao alterar status' });
+  }
+});
+
+// Deletar quiz
+app.post('/api/async/delete-quiz', async (req, res) => {
+  try {
+    const { quizId, creatorId } = req.body;
+    
+    if (!quizId || !creatorId) {
+      return res.json({ success: false, message: 'Dados incompletos' });
+    }
+
+    const quiz = asyncQuizzes.get(quizId);
+    if (!quiz) {
+      return res.json({ success: false, message: 'Quiz não encontrado' });
+    }
+
+    // Verificar se o usuário é o criador
+    if (quiz.creatorId !== creatorId) {
+      return res.json({ success: false, message: 'Acesso negado. Apenas o criador pode deletar o quiz.' });
+    }
+    
+    asyncQuizzes.delete(quizId);
+    await saveAsyncData();
+    res.json({ success: true, message: 'Quiz deletado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao deletar quiz:', err);
+    res.json({ success: false, message: 'Erro ao deletar quiz' });
+  }
+});
+
+// Obter progresso do usuário
+app.get('/api/async/user-progress', (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.json({ success: false, message: 'userId é obrigatório' });
+    }
+
+    const progress = asyncProgress.get(userId);
+    const progressObj = progress ? Object.fromEntries(progress) : {};
+
+    res.json({ success: true, progress: progressObj });
+  } catch (err) {
+    console.error('Erro ao obter progresso:', err);
+    res.json({ success: false, progress: {} });
+  }
+});
+
+// Submeter quiz
+app.post('/api/async/submit-quiz', async (req, res) => {
+  try {
+    const { quizId, userId, answers, score, totalQuestions } = req.body;
+
+    if (!quizId || !userId) {
+      return res.json({ success: false, message: 'Dados incompletos' });
+    }
+
+    // Verificar se já completou
+    if (!asyncProgress.has(userId)) {
+      asyncProgress.set(userId, new Map());
+    }
+
+    const userProgress = asyncProgress.get(userId);
+    if (userProgress.has(quizId)) {
+      return res.json({ success: false, message: 'Você já completou este quiz' });
+    }
+
+    // Salvar progresso
+    userProgress.set(quizId, {
+      completed: true,
+      score: score || 0,
+      totalQuestions: totalQuestions || 0,
+      submittedAt: new Date().toISOString(),
+      answers: answers || []
+    });
+
+    await saveAsyncData();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erro ao submeter quiz:', err);
+    res.json({ success: false, message: 'Erro ao submeter quiz' });
+  }
+});
+
+// Obter estatísticas dos quizzes
+app.get('/api/async/quiz-stats', (req, res) => {
+  try {
+    const stats = {};
+
+    for (const [quizId, quiz] of asyncQuizzes.entries()) {
+      let totalStudents = 0;
+      let completedStudents = 0;
+
+      for (const [studentId, progress] of asyncProgress.entries()) {
+        if (progress.has(quizId)) {
+          totalStudents++;
+          if (progress.get(quizId).completed) {
+            completedStudents++;
+          }
+        }
+      }
+
+      stats[quizId] = {
+        totalStudents,
+        completedStudents
+      };
+    }
+
+    res.json({ success: true, stats });
+  } catch (err) {
+    console.error('Erro ao obter estatísticas:', err);
+    res.json({ success: false, stats: {} });
+  }
+});
+
+// Obter resultados de um quiz (apenas para o criador)
+app.get('/api/async/quiz-results/:quizId', async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const { creatorId } = req.query;
+    
+    console.log(`📊 Requisição de resultados - Quiz: ${quizId}, Criador: ${creatorId}`);
+
+    if (!creatorId) {
+      console.log('❌ creatorId não fornecido');
+      return res.json({ success: false, message: 'creatorId é obrigatório' });
+    }
+
+    const quiz = asyncQuizzes.get(quizId);
+    if (!quiz) {
+      console.log(`❌ Quiz ${quizId} não encontrado`);
+      return res.json({ success: false, message: 'Quiz não encontrado' });
+    }
+
+    // Verificar se o usuário é o criador
+    if (quiz.creatorId !== creatorId) {
+      console.log(`❌ Acesso negado - Quiz criador: ${quiz.creatorId}, Requisitante: ${creatorId}`);
+      return res.json({ success: false, message: 'Acesso negado. Apenas o criador pode ver os resultados.' });
+    }
+
+    // Buscar todos os resultados dos alunos para este quiz
+    const results = [];
+    for (const [studentId, progress] of asyncProgress.entries()) {
+      if (progress.has(quizId)) {
+        const quizProgress = progress.get(quizId);
+        if (quizProgress.completed) {
+          const student = asyncUsers.get(studentId);
+          results.push({
+            studentId,
+            studentName: student?.name || 'Desconhecido',
+            score: quizProgress.score || 0,
+            totalQuestions: quizProgress.totalQuestions || 0,
+            submittedAt: quizProgress.submittedAt,
+            answers: quizProgress.answers || []
+          });
+        }
+      }
+    }
+
+    // Ordenar por score (maior primeiro)
+    results.sort((a, b) => b.score - a.score);
+
+    console.log(`✅ Retornando ${results.length} resultado(s) para o quiz ${quizId}`);
+    res.json({ success: true, results });
+  } catch (err) {
+    console.error('❌ Erro ao obter resultados do quiz:', err);
+    res.json({ success: false, message: 'Erro ao obter resultados' });
+  }
+});
+
+// Cancelar/remover resultado de um aluno
+app.post('/api/async/cancel-student-result', async (req, res) => {
+  try {
+    const { quizId, studentId, creatorId } = req.body;
+
+    if (!quizId || !studentId || !creatorId) {
+      return res.json({ success: false, message: 'Dados incompletos' });
+    }
+
+    const quiz = asyncQuizzes.get(quizId);
+    if (!quiz) {
+      return res.json({ success: false, message: 'Quiz não encontrado' });
+    }
+
+    // Verificar se o usuário é o criador
+    if (quiz.creatorId !== creatorId) {
+      return res.json({ success: false, message: 'Acesso negado. Apenas o criador pode cancelar resultados.' });
+    }
+
+    // Remover o resultado do aluno
+    if (asyncProgress.has(studentId)) {
+      const studentProgress = asyncProgress.get(studentId);
+      if (studentProgress.has(quizId)) {
+        studentProgress.delete(quizId);
+        await saveAsyncData();
+        res.json({ success: true, message: 'Resultado cancelado com sucesso' });
+      } else {
+        res.json({ success: false, message: 'Resultado não encontrado' });
+      }
+    } else {
+      res.json({ success: false, message: 'Aluno não encontrado' });
+    }
+  } catch (err) {
+    console.error('Erro ao cancelar resultado:', err);
+    res.json({ success: false, message: 'Erro ao cancelar resultado' });
+  }
+});
+
+// Editar quiz
+app.post('/api/async/edit-quiz', async (req, res) => {
+  try {
+    const { quizId, title, description, questions, creatorId } = req.body;
+
+    if (!quizId || !creatorId) {
+      return res.json({ success: false, message: 'Dados incompletos' });
+    }
+
+    const quiz = asyncQuizzes.get(quizId);
+    if (!quiz) {
+      return res.json({ success: false, message: 'Quiz não encontrado' });
+    }
+
+    // Verificar se o usuário é o criador
+    if (quiz.creatorId !== creatorId) {
+      return res.json({ success: false, message: 'Acesso negado. Apenas o criador pode editar o quiz.' });
+    }
+
+    // Atualizar quiz
+    if (title !== undefined) quiz.title = title.trim();
+    if (description !== undefined) quiz.description = description?.trim() || '';
+    if (questions !== undefined && Array.isArray(questions) && questions.length > 0) {
+      quiz.questions = questions.map((q, index) => ({
+        id: `q_${index}`,
+        text: q.text,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        time: q.time || 30
+      }));
+    }
+
+    asyncQuizzes.set(quizId, quiz);
+    await saveAsyncData();
+
+    res.json({ success: true, quiz });
+  } catch (err) {
+    console.error('Erro ao editar quiz:', err);
+    res.json({ success: false, message: 'Erro ao editar quiz' });
+  }
+});
+
 // Servir arquivos estáticos do frontend será configurado no final, após Socket.io
 
 // Armazenamento em memória (em produção, use um banco de dados)
 const rooms = new Map();
 const users = new Map();
 
+// Armazenamento para modo assíncrono
+const asyncQuizzes = new Map(); // quizId -> quiz
+const asyncUsers = new Map(); // userId -> { id, name, createdAt }
+const asyncProgress = new Map(); // userId -> { quizId -> { completed, score, totalQuestions, submittedAt } }
+
 // Configuração de persistência
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const dataDir = join(__dirname, 'data');
 const roomsFile = join(dataDir, 'rooms.json');
+const asyncQuizzesFile = join(dataDir, 'async-quizzes.json');
+const asyncUsersFile = join(dataDir, 'async-users.json');
+const asyncProgressFile = join(dataDir, 'async-progress.json');
 
 // Função para converter Map de answers para objeto serializável
 function serializeRoom(room) {
@@ -323,6 +789,7 @@ async function loadRooms() {
 
 // Carregar salas ao iniciar
 loadRooms();
+loadAsyncData();
 
 // Tratar erros de conexão antes do handshake
 io.engine.on('connection_error', (err) => {
